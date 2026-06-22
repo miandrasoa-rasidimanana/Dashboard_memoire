@@ -48,6 +48,7 @@
   .meta-item {
     background: rgba(255,255,255,0.1);
     border-radius: 8px; padding: 7px 14px; text-align: center; min-width: 80px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
   }
   .meta-item .val { font-size: 18px; font-weight: 700; }
   .meta-item .lbl { font-size: 10px; color: #94a3b8; }
@@ -464,7 +465,7 @@
         <div class="meta-item"><div class="val" id="hdr-wb">—</div><div class="lbl">Bien-être /5</div></div>
         <div class="meta-item"><div class="val" id="hdr-perf">—</div><div class="lbl">Perf. /5</div></div>
         <!-- Import CSV inline -->
-        <div class="meta-item" style="gap:4px;align-items:flex-start">
+        <div class="meta-item" style="gap:6px">
           <label for="csv-file-input"
                  style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;
                         background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);
