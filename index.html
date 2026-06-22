@@ -565,6 +565,24 @@
       <button class="filter-reset" onclick="resetFilters()">✕ Réinitialiser</button>
     </div>
 
+    <!-- Import CSV -->
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <label for="csv-file-input" class="filter-reset"
+             style="cursor:pointer;background:#4f46e5;color:#fff;border-color:#4f46e5;
+                    display:inline-flex;align-items:center;gap:5px">
+        📂 Charger un CSV
+      </label>
+      <input type="file" id="csv-file-input" accept=".csv"
+             style="display:none"
+             onchange="if(this.files[0]) loadCSVFile(this.files[0])">
+      <button id="csv-reset-btn" class="filter-reset"
+              style="display:none;background:#fef3c7;border-color:#fcd34d;color:#92400e"
+              onclick="resetToEmbedded()">
+        ↩ Revenir aux données originales
+      </button>
+      <span id="csv-status" style="font-size:11px;color:#64748b"></span>
+    </div>
+
   </div>
 </div>
 
@@ -1135,6 +1153,10 @@ function toggleInterp(id) {
 // SYSTÈME DE FILTRES GLOBAUX
 // ══════════════════════════════════════════════════════
 
+// ── Source de données active (EMBEDDED_DATA ou CSV chargé) ──
+let LOADED_DATA = null;
+function activeData() { return LOADED_DATA !== null ? LOADED_DATA : EMBEDDED_DATA; }
+
 // État courant des filtres
 const FILTERS = {
   modes:  ['Hybride', 'Synchrone-first', 'Asynchrone-first'],
@@ -1170,7 +1192,7 @@ function passFilter(d) {
 // Retourne le sous-ensemble filtré de EMBEDDED_DATA
 function filteredData() {
   if (typeof EMBEDDED_DATA === 'undefined') return [];
-  return EMBEDDED_DATA.filter(passFilter);
+  return activeData().filter(passFilter);
 }
 
 // Mettre à jour le badge et le compteur
@@ -1522,39 +1544,210 @@ function annotateStaticEls() {
   });
 }
 
-// ── Initialisation ────────────────────────────────────
-(function initDashboard() {
-  populateFilterSelects(EMBEDDED_DATA);
+// ═══════════════════════════════════════════════════════
+// IMPORT CSV — parser fidèle à parse_survey.py
+// ═══════════════════════════════════════════════════════
 
-  // Peupler dynamiquement le select timezone
+function parseCSV(text) {
+  const rows = [];
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const row = [];
+    let field = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        if (inQ && line[i+1] === '"') { field += '"'; i++; }
+        else inQ = !inQ;
+      } else if (c === ',' && !inQ) {
+        row.push(field.trim()); field = '';
+      } else {
+        field += c;
+      }
+    }
+    row.push(field.trim());
+    rows.push(row);
+  }
+  return rows;
+}
+
+function parseSurvey(rows) {
+  if (rows.length < 2) return { data: [], excluded: 0, error: 'Fichier vide ou sans données.' };
+
+  const OFFSET = 47;
+
+  function coalesce(row, idx) {
+    const a = (row[idx] ?? '').trim();
+    const b = (row[idx + OFFSET] ?? '').trim();
+    return a !== '' ? a : b;
+  }
+
+  function likert(v) {
+    if (!v || v === '') return null;
+    const m = String(v).trim().match(/^([1-5])/);
+    return m ? parseFloat(m[1]) : null;
+  }
+
+  function num(v) {
+    if (!v || v === '') return null;
+    const s = String(v).replace(/[^0-9.\-]/g, '');
+    const f = parseFloat(s);
+    return isNaN(f) ? null : f;
+  }
+
+  function mean(xs) {
+    const v = xs.filter(x => x !== null && !isNaN(x));
+    return v.length ? Math.round(v.reduce((a,b)=>a+b,0)/v.length * 100)/100 : null;
+  }
+
+  const MODE_MAP = {
+    'synchronous-first':'Synchrone-first','synchrone-first':'Synchrone-first',
+    'hybrid':'Hybride','hybride':'Hybride',
+    'asynchronous-first':'Asynchrone-first','asynchrone-first':'Asynchrone-first',
+  };
+  const ROLE_MAP = {
+    'other':'Autre','product':'Produit (PO/PM)','product (po/pm)':'Produit (PO/PM)',
+    'dev':'Dev','data':'Data','design':'Design','rh':'RH','hr':'RH','ops-sre':'Ops-SRE',
+  };
+  function norm(v, mp) {
+    if (!v || v === '') return null;
+    return mp[String(v).trim().toLowerCase()] || String(v).trim();
+  }
+
+  const out = [];
+  let excluded = 0;
+
+  for (const row of rows.slice(1)) {
+    const elig    = coalesce(row, 3);
+    const att     = coalesce(row, 46);
+    const consent = coalesce(row, 2);
+
+    const eligOk    = ['yes','oui'].includes(elig.toLowerCase());
+    const attOk     = ["agree","d'accord","d'accord"].includes(att.toLowerCase());
+    const consentOk = consent !== '' && !consent.toLowerCase().includes('nan');
+
+    if (!eligOk || !attOk || !consentOk) { excluded++; continue; }
+
+    const L = i => likert(coalesce(row, i));
+
+    const cc3 = L(27);
+    const ccItems = [L(25), L(26), cc3 !== null ? 6-cc3 : null, L(28)];
+
+    const f=L(29), st=L(30), pr=L(35);
+    const wbItems = [L(31),L(32),L(33),L(34),L(36),
+                     f  !== null ? 6-f  : null,
+                     st !== null ? 6-st : null,
+                     pr !== null ? 6-pr : null];
+
+    const tsRaw = num(coalesce(row, 5));
+    const tenRaw = num(coalesce(row, 6));
+    const rdRaw  = num(coalesce(row, 9));
+
+    out.push({
+      mode:          norm(coalesce(row,10), MODE_MAP) || 'Autre',
+      role:          norm(coalesce(row, 4), ROLE_MAP) || 'Autre',
+      sector:        coalesce(row, 7) || 'Autre',
+      team_size:     tsRaw  !== null ? String(Math.round(tsRaw))  : '',
+      tenure:        tenRaw !== null ? String(Math.round(tenRaw)) : '',
+      timezone:      coalesce(row, 8),
+      remote_days:   rdRaw  !== null ? String(Math.round(rdRaw))  : '0',
+      meeting_hours: num(coalesce(row,11)),
+      meeting_pct:   num(coalesce(row,12)),
+      meetings_harm: L(13),
+      aai:  mean([L(14),L(15),L(16),L(17),L(18),L(19)]),
+      perf: mean([L(20),L(21),L(22),L(23),L(24)]),
+      cc:   mean(ccItems),
+      wb:   mean(wbItems),
+      inc:  mean([L(37),L(38),L(39),L(40),L(41),L(42),L(43),L(44),L(45)]),
+    });
+  }
+
+  return { data: out, excluded };
+}
+
+function loadCSVFile(file) {
+  const statusEl = document.getElementById('csv-status');
+  if (statusEl) statusEl.textContent = 'Chargement…';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const { data, excluded, error } = parseSurvey(parseCSV(e.target.result));
+
+    if (error) {
+      if (statusEl) { statusEl.textContent = '❌ ' + error; statusEl.style.color='#dc2626'; }
+      return;
+    }
+    if (data.length === 0) {
+      if (statusEl) { statusEl.textContent = '⚠️ Aucun répondant valide trouvé.'; statusEl.style.color='#f59e0b'; }
+      return;
+    }
+
+    LOADED_DATA = data;
+    refreshFilterSelects();
+    refreshHeaderKPIs();
+    updateFilterUI();
+    renderAll();
+    annotateStaticEls();
+
+    if (statusEl) {
+      statusEl.textContent = `✅ ${data.length} répondants chargés (${excluded} exclus)`;
+      statusEl.style.color = '#059669';
+    }
+    const resetBtn = document.getElementById('csv-reset-btn');
+    if (resetBtn) resetBtn.style.display = 'inline-flex';
+  };
+  reader.onerror = () => {
+    if (statusEl) { statusEl.textContent = '❌ Erreur de lecture du fichier.'; statusEl.style.color='#dc2626'; }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function resetToEmbedded() {
+  LOADED_DATA = null;
+  const statusEl  = document.getElementById('csv-status');
+  const resetBtn  = document.getElementById('csv-reset-btn');
+  const fileInput = document.getElementById('csv-file-input');
+  if (statusEl)  statusEl.textContent = '';
+  if (resetBtn)  resetBtn.style.display = 'none';
+  if (fileInput) fileInput.value = '';
+  refreshFilterSelects();
+  refreshHeaderKPIs();
+  updateFilterUI();
+  renderAll();
+  annotateStaticEls();
+}
+
+function refreshHeaderKPIs() {
+  const src = activeData();
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('hdr-n',     src.length);
+  set('hdr-hybrid', src.filter(d=>d.mode==='Hybride').length);
+  set('hdr-sync',   src.filter(d=>d.mode==='Synchrone-first').length);
+  set('hdr-async',  src.filter(d=>d.mode==='Asynchrone-first').length);
+  set('hdr-aai',    rnd(avg(src.map(d=>d.aai)))+'/5');
+  set('hdr-wb',     rnd(avg(src.map(d=>d.wb)))+'/5');
+  set('hdr-perf',   rnd(avg(src.map(d=>d.perf)))+'/5');
+}
+
+function refreshFilterSelects() {
+  const src = activeData();
+  populateFilterSelects(src);
   const tzSel = document.getElementById('f-tz');
   if (tzSel) {
-    const tzVals = [...new Set(EMBEDDED_DATA.map(d=>d.timezone))].sort();
-    tzVals.forEach(tz => {
+    while (tzSel.options.length > 1) tzSel.remove(1);
+    [...new Set(src.map(d=>d.timezone))].sort().forEach(tz => {
       const o = document.createElement('option');
       o.value = tz; o.textContent = tz;
       tzSel.appendChild(o);
     });
   }
+}
 
-  // KPIs de l'en-tête
-  const n  = EMBEDDED_DATA.length;
-  const nH = EMBEDDED_DATA.filter(d=>d.mode==='Hybride').length;
-  const nS = EMBEDDED_DATA.filter(d=>d.mode==='Synchrone-first').length;
-  const nA = EMBEDDED_DATA.filter(d=>d.mode==='Asynchrone-first').length;
-  const meanAAI  = rnd(avg(EMBEDDED_DATA.map(d=>d.aai)));
-  const meanWB   = rnd(avg(EMBEDDED_DATA.map(d=>d.wb)));
-  const meanPerf = rnd(avg(EMBEDDED_DATA.map(d=>d.perf)));
-
-  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-  set('hdr-n',    n);
-  set('hdr-hybrid', nH);
-  set('hdr-sync',   nS);
-  set('hdr-async',  nA);
-  set('hdr-aai',    meanAAI+'/5');
-  set('hdr-wb',     meanWB+'/5');
-  set('hdr-perf',   meanPerf+'/5');
-
+// ── Initialisation ────────────────────────────────────
+(function initDashboard() {
+  refreshFilterSelects();
+  refreshHeaderKPIs();
   updateFilterUI();
   buildGlossary();
   renderAll();
