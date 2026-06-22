@@ -1,0 +1,3294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Résultats de l'enquête — Agilité asynchrone | Mémoire M2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --hybrid: #4f46e5;    --hybrid-light: #e0e7ff;
+    --sync:   #ef4444;    --sync-light:   #fee2e2;
+    --async:  #10b981;    --async-light:  #d1fae5;
+    --neutral: #6b7280;
+    --bg: #f8fafc; --card: #ffffff;
+    --text: #1e293b; --muted: #64748b; --border: #e2e8f0;
+    --accent: #0ea5e9;
+    --nav-h: 52px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: white;
+    padding: 24px 40px 18px;
+  }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  header h1 { font-size: 20px; font-weight: 700; margin-bottom: 3px; }
+  header .subtitle { color: #94a3b8; font-size: 12px; margin-bottom: 12px; }
+  header .back-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; color: #93c5fd; text-decoration: none;
+    background: rgba(255,255,255,0.08); border-radius: 6px; padding: 4px 10px;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  header .back-link:hover { background: rgba(255,255,255,0.15); }
+
+  /* ── Meta bar KPIs ── */
+  .meta-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .meta-item {
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 7px 14px; text-align: center; min-width: 80px;
+  }
+  .meta-item .val { font-size: 18px; font-weight: 700; }
+  .meta-item .lbl { font-size: 10px; color: #94a3b8; }
+
+  /* ══════════════════════════════════════
+     NAVIGATION STICKY
+  ══════════════════════════════════════ */
+  .top-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #ffffff;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .top-nav::-webkit-scrollbar { display: none; }
+
+  .nav-inner {
+    display: flex; align-items: center;
+    max-width: 1300px; margin: 0 auto;
+    padding: 0 20px;
+    gap: 2px; min-width: max-content;
+  }
+
+  .nav-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 0 16px; height: var(--nav-h);
+    font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    background: transparent; border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer; white-space: nowrap;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  .nav-btn:hover { color: var(--hybrid); background: var(--hybrid-light); }
+  .nav-btn.active {
+    color: var(--hybrid);
+    border-bottom-color: var(--hybrid);
+    background: #f5f3ff;
+  }
+  .nav-btn .nav-icon { font-size: 14px; }
+  .nav-badge {
+    font-size: 10px; font-weight: 700;
+    background: var(--hybrid-light); color: var(--hybrid);
+    padding: 1px 6px; border-radius: 10px;
+  }
+  .nav-btn.active .nav-badge { background: var(--hybrid); color: white; }
+
+  /* ══════════════════════════════════════
+     SECTIONS (une seule visible à la fois)
+  ══════════════════════════════════════ */
+  .page-section {
+    display: none;
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 28px 20px;
+    animation: fadeIn .2s ease;
+  }
+  .page-section.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Section title ── */
+  .section-title {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+    border-left: 4px solid var(--hybrid);
+    padding-left: 12px;
+  }
+  .section-title .badge {
+    font-size: 11px; font-weight: 600;
+    padding: 2px 9px; border-radius: 20px;
+    background: var(--hybrid-light); color: var(--hybrid);
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+
+  /* ── KPI cards ── */
+  .kpi-card {
+    background: var(--card); border-radius: 10px;
+    border: 1px solid var(--border); padding: 16px;
+    text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .kpi-val { font-size: 24px; font-weight: 700; color: var(--hybrid); }
+  .kpi-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .kpi-sub { font-size: 10px; color: var(--muted); margin-top: 4px; font-style: italic; }
+
+  /* ── Grids ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+
+  /* ── Chart wrappers ── */
+  .chart-wrap    { position: relative; height: 240px; width: 100%; }
+  .chart-wrap-sm { position: relative; height: 180px; width: 100%; }
+  .chart-wrap-md { position: relative; height: 280px; width: 100%; }
+  .chart-wrap-lg { position: relative; height: 340px; width: 100%; }
+
+  /* ── Chart title row ── */
+  .chart-title {
+    font-size: 12px; font-weight: 600; color: var(--text);
+    margin-bottom: 10px;
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 8px;
+  }
+  .chart-title span { flex: 1; }
+
+  /* ── Interpretation toggle button ── */
+  .interp-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #f1f5f9; border: 1px solid #e2e8f0;
+    color: #64748b; font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 20px; cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .interp-btn:hover  { background: var(--hybrid); color: white; border-color: var(--hybrid); }
+  .interp-btn.active { background: var(--hybrid); color: white; border-color: var(--hybrid); }
+
+  /* ── Interpretation panel ── */
+  .interp-panel {
+    display: none;
+    margin-top: 12px;
+    background: #f8fafc;
+    border-left: 3px solid var(--hybrid);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    font-size: 12px; line-height: 1.75; color: var(--text);
+    animation: fadeSlide .18s ease;
+  }
+  .interp-panel.open { display: block; }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Heatmap table ── */
+  .heatmap-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .heatmap-table th, .heatmap-table td { padding: 7px 6px; text-align: center; border: 1px solid #e2e8f0; }
+  .heatmap-table th { background: #f1f5f9; font-weight: 600; color: var(--muted); }
+  .heatmap-table td { font-weight: 600; }
+
+  /* ── Mode comparison table ── */
+  .mode-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .mode-table th { background: #f1f5f9; padding: 8px 10px; text-align: left; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .mode-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .mode-table tr:last-child td { border-bottom: none; }
+
+  /* ── Alert box ── */
+  .alert-box {
+    background: #fef9c3; border: 1px solid #fde68a;
+    border-radius: 8px; padding: 12px 16px;
+    font-size: 12px; color: #92400e; margin-top: 24px;
+  }
+
+  /* ── Misc ── */
+  .note { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 8px; }
+  .gap-top { margin-top: 16px; }
+  .gap-top-lg { margin-top: 24px; }
+
+  /* ── Verdict cards (Synthèse) ── */
+  .verdict-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+  @media (max-width: 700px) { .verdict-grid { grid-template-columns: 1fr; } }
+
+  .verdict-card {
+    border-radius: 12px; padding: 20px 18px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .verdict-card .vh-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  }
+  .verdict-card .vh-title { font-size: 15px; font-weight: 700; }
+  .verdict-card .vh-stat {
+    font-size: 20px; font-weight: 800; letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .verdict-card .vh-desc { font-size: 12px; line-height: 1.6; color: #475569; }
+  .verdict-card .vh-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; border-radius: 20px;
+    padding: 3px 10px; align-self: flex-start;
+  }
+  .verdict-card .vh-link {
+    font-size: 11px; color: #6366f1; text-decoration: none; cursor: pointer;
+    font-weight: 600;
+  }
+  .verdict-card .vh-link:hover { text-decoration: underline; }
+
+  .verdict-partial {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1.5px solid #93c5fd;
+  }
+  .verdict-partial .vh-badge { background: #dbeafe; color: #1d4ed8; }
+  .verdict-partial .vh-stat  { color: #1d4ed8; }
+
+  .verdict-no {
+    background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+    border: 1.5px solid #fdba74;
+  }
+  .verdict-no .vh-badge { background: #fed7aa; color: #c2410c; }
+  .verdict-no .vh-stat  { color: #c2410c; }
+
+  .verdict-na {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1.5px solid #cbd5e1;
+  }
+  .verdict-na .vh-badge { background: #e2e8f0; color: #475569; }
+  .verdict-na .vh-stat  { color: #475569; }
+
+  /* ── Légendes figures du rapport ── */
+  .fig-caption {
+    font-size: 11px; color: #475569; font-style: italic;
+    margin-top: 10px; padding: 5px 10px;
+    border-left: 3px solid var(--hybrid);
+    background: #f8fafc; border-radius: 0 4px 4px 0;
+  }
+  .fig-caption strong { color: #1e293b; font-style: normal; font-weight: 700; }
+
+  /* ══════════════════════════════════════
+     FILTRE PANEL
+  ══════════════════════════════════════ */
+  .filter-bar {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filter-inner {
+    max-width: 1300px; margin: 0 auto;
+    padding: 14px 20px 16px;
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+  }
+
+  .filter-group { display: flex; flex-direction: column; gap: 5px; }
+  .filter-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .5px; color: var(--muted);
+  }
+
+  /* Pill checkboxes (Mode) */
+  .pill-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill-check { display: none; }
+  .pill-label {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border-radius: 20px; cursor: pointer;
+    font-size: 11px; font-weight: 600;
+    border: 1.5px solid var(--border); color: var(--muted);
+    background: #f8fafc;
+    transition: background .12s, color .12s, border-color .12s;
+    user-select: none;
+  }
+  .pill-check:checked + .pill-label {
+    color: white; border-color: transparent;
+  }
+  .pill-check.pill-hybrid:checked + .pill-label  { background: var(--hybrid); }
+  .pill-check.pill-sync:checked   + .pill-label  { background: var(--sync); }
+  .pill-check.pill-async:checked  + .pill-label  { background: var(--async); }
+
+  /* Dropdowns */
+  .filter-select {
+    height: 32px; padding: 0 28px 0 10px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: 12px; color: var(--text);
+    background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;
+    appearance: none; -webkit-appearance: none; cursor: pointer;
+    min-width: 140px;
+  }
+  .filter-select:focus { outline: 2px solid var(--hybrid); border-color: transparent; }
+
+  /* Range slider */
+  .range-wrap { display: flex; align-items: center; gap: 8px; }
+  .filter-range {
+    -webkit-appearance: none; width: 130px; height: 4px;
+    border-radius: 2px; background: var(--border); cursor: pointer;
+  }
+  .filter-range::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--hybrid); border: 2px solid white;
+    box-shadow: 0 0 0 1px var(--hybrid);
+  }
+  .range-val { font-size: 11px; font-weight: 700; color: var(--hybrid); min-width: 30px; }
+
+  /* Reset + count */
+  .filter-actions { display: flex; align-items: flex-end; gap: 8px; margin-left: auto; }
+  .filter-reset {
+    height: 32px; padding: 0 14px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    background: #f8fafc; cursor: pointer;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    transition: background .12s, color .12s;
+  }
+  .filter-reset:hover { background: var(--sync); color: white; border-color: var(--sync); }
+
+  .filter-count {
+    height: 32px; padding: 0 14px;
+    border-radius: 8px; font-size: 11px; font-weight: 700;
+    background: var(--hybrid-light); color: var(--hybrid);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .filter-count .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--hybrid); }
+
+  .filter-active-badge {
+    display: none;
+    font-size: 10px; font-weight: 700;
+    background: var(--hybrid); color: white;
+    padding: 1px 6px; border-radius: 10px;
+  }
+  .filter-active-badge.show { display: inline-block; }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center; color: var(--muted);
+    font-size: 11px; padding: 20px;
+    border-top: 1px solid var(--border);
+    background: white;
+  }
+
+  /* ══════════════════════════════════════
+     GLOSSAIRE — TOOLTIPS & LÉGENDE
+  ══════════════════════════════════════ */
+  .gterm {
+    border-bottom: 1.5px dashed #818cf8;
+    cursor: help;
+    display: inline;
+    color: inherit;
+  }
+  /* Tooltip flottant JS — position:fixed, jamais clippé par overflow */
+  #js-tip {
+    position: fixed;
+    background: #1e293b;
+    color: #f1f5f9;
+    padding: 7px 11px;
+    border-radius: 8px;
+    font-size: 11px;
+    line-height: 1.5;
+    font-weight: 400;
+    font-style: normal;
+    max-width: 260px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .12s;
+    z-index: 99999;
+    box-shadow: 0 4px 16px rgba(0,0,0,.30);
+    white-space: normal;
+  }
+  #js-tip.visible { opacity: 1; }
+
+  /* Barre glossaire */
+  .glossary-strip {
+    background: #f5f3ff;
+    border-bottom: 1px solid #ddd6fe;
+    font-size: 11px;
+    position: sticky;
+    top: var(--nav-h);
+    z-index: 98;
+  }
+  .glossary-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 24px; cursor: pointer; color: #5b21b6; font-weight: 600;
+    user-select: none;
+  }
+  .glossary-header:hover { background: #ede9fe; }
+  .glossary-body {
+    display: none;
+    padding: 10px 24px 14px;
+    column-count: 3; column-gap: 24px;
+  }
+  .glossary-body.open { display: block; }
+  .glossary-entry { margin-bottom: 6px; break-inside: avoid; }
+  .glossary-key { font-weight: 700; color: #4f46e5; }
+  .glossary-def { color: #475569; }
+  @media (max-width: 900px) { .glossary-body { column-count: 2; } }
+  @media (max-width: 600px) { .glossary-body { column-count: 1; } }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr 1fr; }
+    header { padding: 16px 16px 14px; }
+  }
+  @media (max-width: 600px) {
+    .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; }
+    .page-section { padding: 16px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════ HEADER ═══ -->
+<header>
+  <div class="header-top">
+    <div>
+      <h1>Résultats de l'enquête — Agilité asynchrone</h1>
+      <p class="subtitle">Consulting Project</p>
+      <div class="meta-bar">
+        <div class="meta-item"><div class="val" id="hdr-n">—</div><div class="lbl">Répondants</div></div>
+        <div class="meta-item"><div class="val" id="hdr-hybrid">—</div><div class="lbl">Hybride</div></div>
+        <div class="meta-item"><div class="val" id="hdr-sync">—</div><div class="lbl">Sync-first</div></div>
+        <div class="meta-item"><div class="val" id="hdr-async">—</div><div class="lbl">Async-first</div></div>
+        <div class="meta-item"><div class="val" id="hdr-aai">—</div><div class="lbl">AAI moyen /5</div></div>
+        <div class="meta-item"><div class="val" id="hdr-wb">—</div><div class="lbl">Bien-être /5</div></div>
+        <div class="meta-item"><div class="val" id="hdr-perf">—</div><div class="lbl">Perf. /5</div></div>
+      </div>
+    </div>
+    <a class="back-link" onclick="showSection('sec-synthese')" style="cursor:pointer">🎯 Synthèse</a>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════ NAVIGATION ═══ -->
+<nav class="top-nav">
+  <div class="nav-inner">
+    <button class="nav-btn active" onclick="showSection('sec-synthese')" id="nav-synthese">
+      <span class="nav-icon">🎯</span> Synthèse
+    </button>
+    <button class="nav-btn" onclick="showSection('sec-profil')" id="nav-profil">
+      <span class="nav-icon">👥</span> Profil échantillon <span class="nav-badge">7</span>
+    </button>
+    <button class="nav-btn" onclick="showSection('sec-reunions')" id="nav-reunions">
+      <span class="nav-icon">🗓️</span> Charge de réunions <span class="nav-badge">4</span>
+    </button>
+    <button class="nav-btn" onclick="showSection('sec-distributions')" id="nav-distributions">
+      <span class="nav-icon">📈</span> Distributions <span class="nav-badge">5</span>
+    </button>
+    <button class="nav-btn" onclick="showSection('sec-h1')" id="nav-h1">
+      <span class="nav-icon">🔵</span> H1 — Async &amp; Performance <span class="nav-badge">8</span>
+    </button>
+    <button class="nav-btn" onclick="showSection('sec-h2')" id="nav-h2">
+      <span class="nav-icon">🔷</span> H2 — Async &amp; Inclusion <span class="nav-badge">5</span>
+    </button>
+    <button class="nav-btn" onclick="showSection('sec-h3')" id="nav-h3">
+      <span class="nav-icon">🟢</span> H3 — Comparaisons <span class="nav-badge">7</span>
+    </button>
+    <button class="nav-btn" onclick="showSection('sec-correlations')" id="nav-correlations">
+      <span class="nav-icon">🔗</span> Matrice corrélations
+    </button>
+    <button class="nav-btn" onclick="showSection('sec-tableau')" id="nav-tableau">
+      <span class="nav-icon">📋</span> Tableau comparatif
+    </button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════ FILTER PANEL ═══ -->
+<div class="filter-bar" id="filter-bar" style="position:sticky;top:var(--nav-h);z-index:99">
+  <div class="filter-inner">
+
+    <!-- Mode de fonctionnement -->
+    <div class="filter-group">
+      <span class="filter-label">Mode de fonctionnement</span>
+      <div class="pill-group">
+        <input type="checkbox" class="pill-check pill-hybrid" id="f-hybrid" checked onchange="applyFilters()">
+        <label class="pill-label" for="f-hybrid">🔵 Hybride</label>
+        <input type="checkbox" class="pill-check pill-sync" id="f-sync" checked onchange="applyFilters()">
+        <label class="pill-label" for="f-sync">🔴 Sync-first</label>
+        <input type="checkbox" class="pill-check pill-async" id="f-async" checked onchange="applyFilters()">
+        <label class="pill-label" for="f-async">🟢 Async-first</label>
+      </div>
+    </div>
+
+    <!-- Rôle -->
+    <div class="filter-group">
+      <span class="filter-label">Rôle principal</span>
+      <select class="filter-select" id="f-role" onchange="applyFilters()">
+        <option value="">Tous les rôles</option>
+      </select>
+    </div>
+
+    <!-- Secteur -->
+    <div class="filter-group">
+      <span class="filter-label">Secteur d'activité</span>
+      <select class="filter-select" id="f-sector" onchange="applyFilters()">
+        <option value="">Tous les secteurs</option>
+      </select>
+    </div>
+
+    <!-- Fuseau horaire -->
+    <div class="filter-group">
+      <span class="filter-label">Fuseau horaire équipe</span>
+      <select class="filter-select" id="f-tz" onchange="applyFilters()">
+        <option value="">Tous</option>
+        <option value="Même fuseau">Même fuseau</option>
+        <option value="Fuseaux mixtes">Fuseaux mixtes</option>
+      </select>
+    </div>
+
+    <!-- Jours télétravail -->
+    <div class="filter-group">
+      <span class="filter-label">Télétravail ≥ <span id="f-remote-val">0</span> j/sem</span>
+      <div class="range-wrap">
+        <input type="range" class="filter-range" id="f-remote" min="0" max="5" value="0" step="1"
+               oninput="document.getElementById('f-remote-val').textContent=this.value"
+               onchange="applyFilters()">
+        <span class="range-val" id="f-remote-badge">0+</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="filter-actions">
+      <div class="filter-count" id="filter-count">
+        <span class="dot"></span> <span id="filter-n">—</span> répondants
+        <span class="filter-active-badge" id="filter-active-badge"></span>
+      </div>
+      <button class="filter-reset" onclick="resetFilters()">✕ Réinitialiser</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ GLOSSAIRE ═══ -->
+<div class="glossary-strip" id="glossary-strip">
+  <div class="glossary-header" onclick="toggleGlossary()">
+    <span>📖 Glossaire &amp; acronymes</span>
+    <span id="glossary-caret">▸ afficher</span>
+  </div>
+  <div class="glossary-body" id="glossary-body"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 0 — SYNTHÈSE & HYPOTHÈSES
+════════════════════════════════════════════════════════ -->
+<section class="page-section active" id="sec-synthese">
+
+  <div class="section-title">🎯 Résultats — Synthèse des hypothèses <span class="badge" id="badge-synthese">n=?</span></div>
+
+  <!-- KPIs dynamiques -->
+  <div class="grid-5" id="kpi-synthese"></div>
+
+  <!-- Verdicts H1 / H2 / H3 -->
+  <div class="verdict-grid">
+
+    <!-- H1 -->
+    <div class="card verdict-card verdict-partial">
+      <div class="vh-label">Hypothèse 1</div>
+      <div class="vh-title">Pratiques async, Bien-être &amp; Performance</div>
+      <div class="vh-badge">✓ Partiellement confirmée</div>
+      <div class="vh-stat" id="syn-h1-stat">r = —</div>
+      <div class="vh-desc" id="syn-h1-desc">
+        Le mécanisme principal est la charge de réunions, non l'AAI directement.
+        Les équipes surexposées aux réunions déclarent un bien-être significativement plus faible.
+      </div>
+      <span class="vh-link" onclick="showSection('sec-h1')">→ Section H1 — détail</span>
+    </div>
+
+    <!-- H2 -->
+    <div class="card verdict-card verdict-no">
+      <div class="vh-label">Hypothèse 2</div>
+      <div class="vh-title">Pratiques async &amp; Inclusion</div>
+      <div class="vh-badge">✗ Non confirmée</div>
+      <div class="vh-stat" id="syn-h2-stat">r = —</div>
+      <div class="vh-desc" id="syn-h2-desc">
+        L'adoption de pratiques asynchrones n'est pas associée à un sentiment d'inclusion
+        plus élevé dans cet échantillon. La relation est faible et non significative.
+      </div>
+      <span class="vh-link" onclick="showSection('sec-h2')">→ Section H2 — détail</span>
+    </div>
+
+    <!-- H3 -->
+    <div class="card verdict-card verdict-na">
+      <div class="vh-label">Hypothèse 3</div>
+      <div class="vh-title">Comparaison des modes de fonctionnement</div>
+      <div class="vh-badge">— Non testable</div>
+      <div class="vh-stat" id="syn-h3-stat">0 async-first</div>
+      <div class="vh-desc" id="syn-h3-desc">
+        Aucun répondant ne se déclare « asynchrone-first ». La comparaison se limite
+        aux modes Hybride vs Synchrone-first, dont les scores sont très proches.
+      </div>
+      <span class="vh-link" onclick="showSection('sec-h3')">→ Section H3 — détail</span>
+    </div>
+
+  </div>
+
+  <!-- Associations clés calculées dynamiquement -->
+  <div class="card gap-top">
+    <div class="chart-title"><span>Corrélations-clés — Vue instantanée</span></div>
+    <div id="syn-corr-table" style="overflow-x:auto; margin-top:12px"></div>
+  </div>
+
+  <!-- Limite méthodologique -->
+  <div class="alert-box">
+    ⚠️ <strong>Limite méthodologique :</strong>
+    L'échantillon comporte <strong id="syn-n-limit">48</strong> répondants valides,
+    surreprésentatifs du secteur Tech (63 %) et du mode Hybride (69 %).
+    Avec n&lt;100 et 0 répondant async-first, les corrélations doivent être interprétées
+    avec prudence (intervalles de confiance larges). Ces résultats constituent une
+    exploration structurée, pas une démonstration statistiquement définitive.
+  </div>
+
+  <!-- Guide de navigation -->
+  <div class="card gap-top">
+    <div class="chart-title"><span>Guide — Sections du dashboard</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px">
+      <div onclick="showSection('sec-profil')"    style="cursor:pointer;padding:10px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;font-size:12px"><b>👥 Profil</b><br><span style="color:#64748b">Composition de l'échantillon (Figure 1)</span></div>
+      <div onclick="showSection('sec-reunions')"  style="cursor:pointer;padding:10px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;font-size:12px"><b>🗓️ Charge de réunions</b><br><span style="color:#64748b">Distribution, nuisibilité, impact</span></div>
+      <div onclick="showSection('sec-distributions')" style="cursor:pointer;padding:10px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;font-size:12px"><b>📈 Distributions</b><br><span style="color:#64748b">Histogrammes des 5 scores</span></div>
+      <div onclick="showSection('sec-h1')"        style="cursor:pointer;padding:10px 14px;background:#dbeafe;border-radius:8px;border:1px solid #93c5fd;font-size:12px"><b>🔵 H1 — Async &amp; Performance</b><br><span style="color:#1d4ed8">Figures 2 &amp; 4 du rapport</span></div>
+      <div onclick="showSection('sec-h2')"        style="cursor:pointer;padding:10px 14px;background:#fef3c7;border-radius:8px;border:1px solid #fcd34d;font-size:12px"><b>🔷 H2 — Async &amp; Inclusion</b><br><span style="color:#92400e">AAI vs Inclusion</span></div>
+      <div onclick="showSection('sec-h3')"        style="cursor:pointer;padding:10px 14px;background:#dcfce7;border-radius:8px;border:1px solid #86efac;font-size:12px"><b>🟢 H3 — Comparaisons</b><br><span style="color:#166534">Radar &amp; scores contextuels</span></div>
+      <div onclick="showSection('sec-correlations')" style="cursor:pointer;padding:10px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;font-size:12px"><b>🔗 Corrélations</b><br><span style="color:#64748b">Heatmap + Figure 3 classée</span></div>
+      <div onclick="showSection('sec-tableau')"   style="cursor:pointer;padding:10px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;font-size:12px"><b>📋 Tableaux</b><br><span style="color:#64748b">Comparatifs mode / rôle / secteur</span></div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 1 — PROFIL ÉCHANTILLON
+════════════════════════════════════════════════════════ -->
+<section class="page-section" id="sec-profil">
+
+  <div class="section-title">👥 Profil de l'échantillon — Vue enrichie <span class="badge" id="badge-profil">n=?</span></div>
+
+  <!-- KPIs -->
+  <div class="grid-5" id="kpi-grid"></div>
+
+  <div class="grid-3 gap-top">
+    <div class="card">
+      <div class="chart-title"><span>Mode de fonctionnement</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-modes')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-modes"></canvas></div>
+      <div id="interp-modes" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Fuseau horaire de l'équipe</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-tz')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-tz"></canvas></div>
+      <div id="interp-tz" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Jours de télétravail / semaine</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-remote')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-remote"></canvas></div>
+      <div id="interp-remote" class="interp-panel"></div>
+    </div>
+  </div>
+
+  <div class="grid-2 gap-top">
+    <div class="card">
+      <div class="chart-title"><span>Rôle principal</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-roles')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-roles"></canvas></div>
+      <div id="interp-roles" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Secteur d'activité</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-sectors')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-sectors"></canvas></div>
+      <div id="interp-sectors" class="interp-panel"></div>
+    </div>
+  </div>
+  <p class="fig-caption"><strong>Figure 1</strong> — Composition de l'échantillon : répartition par secteur d'activité et par mode de fonctionnement déclaré (n = 48).</p>
+
+  <div class="grid-2 gap-top">
+    <div class="card">
+      <div class="chart-title"><span>Distribution ancienneté dans l'équipe</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-tenure')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-tenure"></canvas></div>
+      <div id="interp-tenure" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Distribution taille d'équipe</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-teamsize')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-teamsize"></canvas></div>
+      <div id="interp-teamsize" class="interp-panel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 2 — CHARGE DE RÉUNIONS
+════════════════════════════════════════════════════════ -->
+<section class="page-section" id="sec-reunions">
+
+  <div class="section-title">🗓️ Analyse de la charge de réunions</div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="chart-title"><span>Distribution % temps en réunion</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-dist-mp')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-dist-mp"></canvas></div>
+      <div id="interp-dist-mp" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Heures réunion / semaine par mode</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-mh-mode')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-mh-mode"></canvas></div>
+      <div id="interp-mh-mode" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Nuisibilité perçue des réunions par mode</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-harm-mode')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-harm-mode"></canvas></div>
+      <div id="interp-harm-mode" class="interp-panel"></div>
+    </div>
+  </div>
+
+  <div class="card gap-top">
+    <div class="chart-title"><span>% Temps en réunion vs Score AAI — relation entre charge et pratiques async</span>
+      <button class="interp-btn" onclick="toggleInterp('interp-mp-aai')">💡 Interpréter</button></div>
+    <div class="chart-wrap-md"><canvas id="chart-mp-aai"></canvas></div>
+    <div id="interp-mp-aai" class="interp-panel"></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 3 — DISTRIBUTIONS DES SCORES
+════════════════════════════════════════════════════════ -->
+<section class="page-section" id="sec-distributions">
+
+  <div class="section-title">📈 Distribution des scores composites</div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="chart-title"><span>Distribution score AAI</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-dist-aai')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-dist-aai"></canvas></div>
+      <div id="interp-dist-aai" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Distribution score Bien-être</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-dist-wb')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-dist-wb"></canvas></div>
+      <div id="interp-dist-wb" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Distribution score Performance</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-dist-perf')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-dist-perf"></canvas></div>
+      <div id="interp-dist-perf" class="interp-panel"></div>
+    </div>
+  </div>
+
+  <div class="grid-2 gap-top">
+    <div class="card">
+      <div class="chart-title"><span>Distribution score Inclusion</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-dist-inc')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-dist-inc"></canvas></div>
+      <div id="interp-dist-inc" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Distribution score Clarté &amp; Collaboration</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-dist-cc')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-dist-cc"></canvas></div>
+      <div id="interp-dist-cc" class="interp-panel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 4 — H1 : PRATIQUES ASYNC, BIEN-ÊTRE & PERFORMANCE
+════════════════════════════════════════════════════════ -->
+<section class="page-section" id="sec-h1">
+
+  <div class="section-title">🔵 H1 — Pratiques Async, Bien-être &amp; Performance</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="chart-title"><span>AAI vs Bien-être (avec droite de tendance)</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-aai-wb')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-aai-wb"></canvas></div>
+      <div id="interp-aai-wb" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>AAI vs Performance (avec droite de tendance)</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-aai-perf')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-aai-perf"></canvas></div>
+      <div id="interp-aai-perf" class="interp-panel"></div>
+    </div>
+  </div>
+
+  <div class="grid-2 gap-top">
+    <div class="card">
+      <div class="chart-title"><span>AAI vs Clarté &amp; Collaboration</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-aai-cc')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-aai-cc"></canvas></div>
+      <div id="interp-aai-cc" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Heures réunion vs Bien-être</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-mh-wb')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-mh-wb"></canvas></div>
+      <div id="interp-mh-wb" class="interp-panel"></div>
+    </div>
+  </div>
+
+  <div class="grid-2 gap-top">
+    <div class="card">
+      <div class="chart-title"><span>Heures réunion vs Performance</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-mh-perf')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-mh-perf"></canvas></div>
+      <div id="interp-mh-perf" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>% Réunions vs Bien-être</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-mp-wb')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-mp-wb"></canvas></div>
+      <div id="interp-mp-wb" class="interp-panel"></div>
+      <p class="fig-caption"><strong>Figure 2</strong> — Relation entre la part du temps passée en réunion (%) et le score de bien-être (n = 48). La droite en pointillés résume la tendance d'ensemble.</p>
+    </div>
+  </div>
+
+  <div class="grid-2 gap-top">
+    <div class="card">
+      <div class="chart-title"><span>% Réunions vs Performance</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-mp-perf')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-mp-perf"></canvas></div>
+      <div id="interp-mp-perf" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Scores moyens par indicateur et par mode</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-global-bars')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-global-bars"></canvas></div>
+      <div id="interp-global-bars" class="interp-panel"></div>
+      <p class="fig-caption"><strong>Figure 4</strong> — Scores moyens des cinq indices (AAI, Bien-être, Performance, Clarté & Collaboration, Inclusion) selon le mode de fonctionnement (échelle 1–5).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 5 — H2 : PRATIQUES ASYNC & INCLUSION
+════════════════════════════════════════════════════════ -->
+<section class="page-section" id="sec-h2">
+
+  <div class="section-title">🔷 H2 — Pratiques Async &amp; Inclusion</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="chart-title"><span>AAI vs Inclusion (avec droite de tendance)</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-aai-inc')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-aai-inc"></canvas></div>
+      <div id="interp-aai-inc" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Score d'inclusion par mode de fonctionnement</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-inc-mode')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-inc-mode"></canvas></div>
+      <div id="interp-inc-mode" class="interp-panel"></div>
+    </div>
+  </div>
+
+  <div class="grid-2 gap-top">
+    <div class="card">
+      <div class="chart-title"><span>Inclusion par fuseau horaire</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-inc-tz')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-inc-tz"></canvas></div>
+      <div id="interp-inc-tz" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Inclusion par secteur d'activité</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-inc-sector')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-inc-sector"></canvas></div>
+      <div id="interp-inc-sector" class="interp-panel"></div>
+    </div>
+  </div>
+
+  <div class="card gap-top">
+    <div class="chart-title"><span>Inclusion par rôle principal</span>
+      <button class="interp-btn" onclick="toggleInterp('interp-inc-role')">💡 Interpréter</button></div>
+    <div class="chart-wrap"><canvas id="chart-inc-role"></canvas></div>
+    <div id="interp-inc-role" class="interp-panel"></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 6 — H3 : COMPARAISONS AVANCÉES
+════════════════════════════════════════════════════════ -->
+<section class="page-section" id="sec-h3">
+
+  <div class="section-title">🟢 H3 — Comparaisons avancées &amp; Facteurs contextuels</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="chart-title"><span>Radar — Scores moyens par mode</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-radar')">💡 Interpréter</button></div>
+      <div class="chart-wrap-md"><canvas id="chart-radar"></canvas></div>
+      <div id="interp-radar" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Scores moyens par secteur d'activité</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-scores-sector')">💡 Interpréter</button></div>
+      <div class="chart-wrap-md"><canvas id="chart-scores-sector"></canvas></div>
+      <div id="interp-scores-sector" class="interp-panel"></div>
+    </div>
+  </div>
+
+  <div class="card gap-top">
+    <div class="chart-title"><span>Scores moyens par rôle (AAI, Bien-être, Performance, Inclusion)</span>
+      <button class="interp-btn" onclick="toggleInterp('interp-scores-role')">💡 Interpréter</button></div>
+    <div class="chart-wrap-lg"><canvas id="chart-scores-role"></canvas></div>
+    <div id="interp-scores-role" class="interp-panel"></div>
+  </div>
+
+  <div class="grid-2 gap-top">
+    <div class="card">
+      <div class="chart-title"><span>Ancienneté vs Performance</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-tenure-perf')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-tenure-perf"></canvas></div>
+      <div id="interp-tenure-perf" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Ancienneté vs Bien-être</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-tenure-wb')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-tenure-wb"></canvas></div>
+      <div id="interp-tenure-wb" class="interp-panel"></div>
+    </div>
+  </div>
+
+  <div class="grid-2 gap-top">
+    <div class="card">
+      <div class="chart-title"><span>Taille d'équipe vs Score AAI</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-ts-aai')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-ts-aai"></canvas></div>
+      <div id="interp-ts-aai" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Jours télétravail vs Bien-être &amp; Performance</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-remote-scores')">💡 Interpréter</button></div>
+      <div class="chart-wrap"><canvas id="chart-remote-scores"></canvas></div>
+      <div id="interp-remote-scores" class="interp-panel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 7 — MATRICE DE CORRÉLATIONS
+════════════════════════════════════════════════════════ -->
+<section class="page-section" id="sec-correlations">
+
+  <div class="section-title">🔗 Matrice de corrélations de Pearson</div>
+
+  <div class="card">
+    <div class="chart-title">
+      <span>Heatmap — Corrélations entre tous les indices (n=<span id="hm-n">?</span>)</span>
+      <button class="interp-btn" onclick="toggleInterp('interp-heatmap')">💡 Interpréter</button>
+    </div>
+    <div id="heatmap-container" style="overflow-x:auto; margin-top:14px"></div>
+    <div id="interp-heatmap" class="interp-panel" style="margin-top:12px"></div>
+    <p class="note" style="margin-top:10px">
+      Échelle : vert foncé → r ≈ +1 · rouge foncé → r ≈ −1 · blanc → r ≈ 0 &nbsp;|&nbsp;
+      Seuils : * p&lt;0,05 · ** p&lt;0,01 · *** p&lt;0,001 · ns non significatif
+    </p>
+  </div>
+
+  <!-- Figure 3 — Corrélations classées -->
+  <div class="card gap-top">
+    <div class="chart-title">
+      <span>Corrélations classées par force et significativité</span>
+      <button class="interp-btn" onclick="toggleInterp('interp-fig3')">💡 Interpréter</button>
+    </div>
+    <div class="chart-wrap" style="height:300px"><canvas id="chart-fig3"></canvas></div>
+    <div id="interp-fig3" class="interp-panel"></div>
+    <p class="fig-caption"><strong>Figure 3</strong> — Coefficients de corrélation de Pearson entre les principales variables, classés par force décroissante et colorés selon le niveau de significativité statistique. (*** p&lt;0,001 · ** p&lt;0,01 · * p&lt;0,05 · † p&lt;0,10 · ns non significatif)</p>
+  </div>
+
+  <!-- Scatter grid des paires les plus importantes -->
+  <div class="section-title" style="margin-top:28px">Nuages de points — Paires clés</div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="chart-title"><span>AAI vs Bien-être</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-c-aai-wb')">💡 Interpréter</button></div>
+      <div class="chart-wrap-sm"><canvas id="chart-c-aai-wb"></canvas></div>
+      <div id="interp-c-aai-wb" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>AAI vs Performance</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-c-aai-perf')">💡 Interpréter</button></div>
+      <div class="chart-wrap-sm"><canvas id="chart-c-aai-perf"></canvas></div>
+      <div id="interp-c-aai-perf" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>AAI vs Inclusion</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-c-aai-inc')">💡 Interpréter</button></div>
+      <div class="chart-wrap-sm"><canvas id="chart-c-aai-inc"></canvas></div>
+      <div id="interp-c-aai-inc" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Bien-être vs Performance</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-c-wb-perf')">💡 Interpréter</button></div>
+      <div class="chart-wrap-sm"><canvas id="chart-c-wb-perf"></canvas></div>
+      <div id="interp-c-wb-perf" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>Inclusion vs Bien-être</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-c-inc-wb')">💡 Interpréter</button></div>
+      <div class="chart-wrap-sm"><canvas id="chart-c-inc-wb"></canvas></div>
+      <div id="interp-c-inc-wb" class="interp-panel"></div>
+    </div>
+    <div class="card">
+      <div class="chart-title"><span>CC vs Performance</span>
+        <button class="interp-btn" onclick="toggleInterp('interp-c-cc-perf')">💡 Interpréter</button></div>
+      <div class="chart-wrap-sm"><canvas id="chart-c-cc-perf"></canvas></div>
+      <div id="interp-c-cc-perf" class="interp-panel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SECTION 8 — TABLEAU COMPARATIF COMPLET
+════════════════════════════════════════════════════════ -->
+<section class="page-section" id="sec-tableau">
+
+  <div class="section-title">📋 Tableaux comparatifs complets</div>
+
+  <div class="card">
+    <div class="chart-title">
+      <span>Tous indicateurs par mode de fonctionnement</span>
+      <button class="interp-btn" onclick="toggleInterp('interp-table')">💡 Interpréter</button>
+    </div>
+    <div style="overflow-x:auto; margin-top:12px">
+      <table id="mode-table" class="mode-table"></table>
+    </div>
+    <div id="interp-table" class="interp-panel" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card gap-top">
+    <div class="chart-title">
+      <span>Tous indicateurs par rôle principal</span>
+      <button class="interp-btn" onclick="toggleInterp('interp-table-role')">💡 Interpréter</button>
+    </div>
+    <div style="overflow-x:auto; margin-top:12px">
+      <table id="role-table" class="mode-table"></table>
+    </div>
+    <div id="interp-table-role" class="interp-panel" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card gap-top">
+    <div class="chart-title">
+      <span>Tous indicateurs par secteur d'activité</span>
+      <button class="interp-btn" onclick="toggleInterp('interp-table-sector')">💡 Interpréter</button>
+    </div>
+    <div style="overflow-x:auto; margin-top:12px">
+      <table id="sector-table" class="mode-table"></table>
+    </div>
+    <div id="interp-table-sector" class="interp-panel" style="margin-top:12px"></div>
+  </div>
+
+  <div class="alert-box">
+    ⚠️ <strong>Limite méthodologique :</strong> n=<span id="n-limit">48</span> répondants valides.
+    Avec n&lt;50, les corrélations doivent être interprétées avec prudence (intervalles de confiance larges).
+    L'absence de répondants « Asynchrone-first » limite les comparaisons inter-modes prévues par H3.
+    Ces résultats constituent une exploration structurée plutôt qu'une démonstration statistiquement définitive.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ FOOTER ═══ -->
+<footer>
+  Annexe — Analyses Complémentaires · Agilité Asynchrone · Mémoire M2 2025-2026 · Généré automatiquement à partir des réponses de l'enquête (n=48)
+</footer>
+
+<!-- ═══════════════════════════════════════ NAVIGATION JS ═══ -->
+<script>
+// ── Navigation entre sections ──
+function showSection(id) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const navId = 'nav-' + id.replace('sec-', '');
+  const btn = document.getElementById(navId);
+  if (btn) btn.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Toggle interprétation ──
+function toggleInterp(id) {
+  const panel = document.getElementById(id);
+  if (!panel) return;
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  const btn = panel.closest('.card, .page-section').querySelector(`[onclick="toggleInterp('${id}')"]`);
+  if (btn) btn.classList.toggle('active', !isOpen);
+}
+
+// ══════════════════════════════════════════════════════
+// SYSTÈME DE FILTRES GLOBAUX
+// ══════════════════════════════════════════════════════
+
+// État courant des filtres
+const FILTERS = {
+  modes:  ['Hybride', 'Synchrone-first', 'Asynchrone-first'],
+  role:   '',
+  sector: '',
+  tz:     '',
+  remoteMin: 0
+};
+
+// Lire l'état des contrôles et mettre à jour FILTERS
+function readFilters() {
+  const modes = [];
+  if (document.getElementById('f-hybrid').checked) modes.push('Hybride');
+  if (document.getElementById('f-sync').checked)   modes.push('Synchrone-first');
+  if (document.getElementById('f-async').checked)  modes.push('Asynchrone-first');
+  FILTERS.modes     = modes.length ? modes : ['Hybride','Synchrone-first','Asynchrone-first'];
+  FILTERS.role      = document.getElementById('f-role').value;
+  FILTERS.sector    = document.getElementById('f-sector').value;
+  FILTERS.tz        = document.getElementById('f-tz').value;
+  FILTERS.remoteMin = parseInt(document.getElementById('f-remote').value, 10);
+}
+
+// Tester si un répondant passe les filtres
+function passFilter(d) {
+  if (!FILTERS.modes.includes(d.mode)) return false;
+  if (FILTERS.role   && d.role   !== FILTERS.role)   return false;
+  if (FILTERS.sector && d.sector !== FILTERS.sector)  return false;
+  if (FILTERS.tz     && d.timezone !== FILTERS.tz)    return false;
+  if (d.remote_days < FILTERS.remoteMin)               return false;
+  return true;
+}
+
+// Retourne le sous-ensemble filtré de EMBEDDED_DATA
+function filteredData() {
+  if (typeof EMBEDDED_DATA === 'undefined') return [];
+  return EMBEDDED_DATA.filter(passFilter);
+}
+
+// Mettre à jour le badge et le compteur
+function updateFilterUI() {
+  const n = filteredData().length;
+  document.getElementById('filter-n').textContent = n;
+
+  // Compter les filtres actifs non-défaut
+  let active = 0;
+  if (FILTERS.modes.length < 3) active++;
+  if (FILTERS.role)   active++;
+  if (FILTERS.sector) active++;
+  if (FILTERS.tz)     active++;
+  if (FILTERS.remoteMin > 0) active++;
+
+  const badge = document.getElementById('filter-active-badge');
+  if (badge) {
+    badge.textContent = active;
+    badge.classList.toggle('show', active > 0);
+  }
+  const remoteBadge = document.getElementById('f-remote-badge');
+  if (remoteBadge) remoteBadge.textContent = FILTERS.remoteMin + '+';
+}
+
+// Déclenché à chaque changement de filtre
+function applyFilters() {
+  readFilters();
+  updateFilterUI();
+  if (typeof renderAll === 'function') renderAll();
+  if (typeof annotateStaticEls === 'function') annotateStaticEls();
+}
+
+// Réinitialiser tous les filtres
+function resetFilters() {
+  document.getElementById('f-hybrid').checked = true;
+  document.getElementById('f-sync').checked   = true;
+  document.getElementById('f-async').checked  = true;
+  document.getElementById('f-role').value     = '';
+  document.getElementById('f-sector').value   = '';
+  document.getElementById('f-tz').value       = '';
+  document.getElementById('f-remote').value   = '0';
+  document.getElementById('f-remote-val').textContent = '0';
+  applyFilters();
+}
+
+// Peupler les <select> rôle et secteur depuis les données (appelé par Bloc 2)
+function populateFilterSelects(data) {
+  const roles   = [...new Set(data.map(d => d.role))].filter(Boolean).sort();
+  const sectors = [...new Set(data.map(d => d.sector))].filter(Boolean).sort();
+  const roleEl   = document.getElementById('f-role');
+  const sectorEl = document.getElementById('f-sector');
+  roles.forEach(r => {
+    const o = document.createElement('option'); o.value = r; o.textContent = r;
+    roleEl.appendChild(o);
+  });
+  sectors.forEach(s => {
+    const o = document.createElement('option'); o.value = s; o.textContent = s;
+    sectorEl.appendChild(o);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// BLOC 2 — DONNÉES EMBEDDED + FONCTIONS UTILITAIRES
+// n=48 répondants valides (test Marie-Pierre exclu)
+// Scores composites pré-calculés (inversions appliquées)
+// ═══════════════════════════════════════════════════════
+
+const EMBEDDED_DATA = [
+  // Format: {role, team_size, tenure, sector, timezone, remote_days, mode,
+  //          meeting_hours, meeting_pct, meetings_harm,
+  //          aai, perf, cc, wb, inc}
+  // Scores sur 5 · inversions : CC3(interrupt), WB1(fatigue), WB2(stress), WB7(pression)
+  {role:"Autre",         team_size:12, tenure:6,  sector:"Banque-Assurance", timezone:"Même fuseau", remote_days:2, mode:"Hybride",         meeting_hours:8,   meeting_pct:25, meetings_harm:3, aai:2.33, perf:2.60, cc:4.00, wb:3.50, inc:3.33},
+  {role:"RH",            team_size:10, tenure:24, sector:"Santé",            timezone:"Même fuseau", remote_days:3, mode:"Synchrone-first",  meeting_hours:2,   meeting_pct:10, meetings_harm:1, aai:2.17, perf:5.00, cc:3.25, wb:3.25, inc:2.44},
+  {role:"Dev",           team_size:4,  tenure:23, sector:"Banque-Assurance", timezone:"Même fuseau", remote_days:1, mode:"Hybride",         meeting_hours:3,   meeting_pct:20, meetings_harm:4, aai:2.83, perf:3.40, cc:3.50, wb:3.00, inc:3.11},
+  {role:"Autre",         team_size:8,  tenure:18, sector:"Tech",             timezone:"Même fuseau", remote_days:2, mode:"Synchrone-first",  meeting_hours:2,   meeting_pct:15, meetings_harm:4, aai:3.00, perf:4.40, cc:3.75, wb:4.50, inc:4.00},
+  {role:"Produit (PO/PM)",team_size:6, tenure:35, sector:"Tech",             timezone:"±3h",         remote_days:2, mode:"Hybride",         meeting_hours:5,   meeting_pct:20, meetings_harm:4, aai:2.00, perf:3.00, cc:3.25, wb:3.00, inc:2.89},
+  {role:"Produit (PO/PM)",team_size:3, tenure:9,  sector:"Tech",             timezone:"Même fuseau", remote_days:2, mode:"Hybride",         meeting_hours:4,   meeting_pct:25, meetings_harm:4, aai:2.33, perf:3.20, cc:2.50, wb:3.00, inc:2.78},
+  {role:"Dev",           team_size:7,  tenure:8,  sector:"Tech",             timezone:"Même fuseau", remote_days:2, mode:"Synchrone-first",  meeting_hours:10,  meeting_pct:30, meetings_harm:4, aai:1.83, perf:1.80, cc:2.50, wb:3.38, inc:2.89},
+  {role:"Ops-SRE",       team_size:7,  tenure:4,  sector:"Tech",             timezone:"Même fuseau", remote_days:3, mode:"Synchrone-first",  meeting_hours:8,   meeting_pct:22, meetings_harm:5, aai:1.33, perf:2.60, cc:2.25, wb:3.25, inc:4.44},
+  {role:"Produit (PO/PM)",team_size:8, tenure:75, sector:"Tech",             timezone:"Même fuseau", remote_days:2, mode:"Hybride",         meeting_hours:4,   meeting_pct:30, meetings_harm:4, aai:2.67, perf:3.20, cc:3.25, wb:3.13, inc:3.22},
+  {role:"Dev",           team_size:4,  tenure:21, sector:"Conseil",          timezone:"±3h",         remote_days:3, mode:"Hybride",         meeting_hours:5,   meeting_pct:36, meetings_harm:4, aai:2.67, perf:2.60, cc:2.50, wb:2.88, inc:3.11},
+  {role:"Dev",           team_size:3,  tenure:13, sector:"Banque-Assurance", timezone:"Même fuseau", remote_days:2, mode:"Hybride",         meeting_hours:4,   meeting_pct:20, meetings_harm:2, aai:2.00, perf:3.00, cc:3.50, wb:3.63, inc:3.11},
+  {role:"Dev",           team_size:3,  tenure:17, sector:"Conseil",          timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:5,   meeting_pct:15, meetings_harm:2, aai:2.17, perf:2.60, cc:2.75, wb:2.88, inc:2.67},
+  {role:"Produit (PO/PM)",team_size:5, tenure:13, sector:"Banque-Assurance", timezone:"Même fuseau", remote_days:2, mode:"Synchrone-first",  meeting_hours:9,   meeting_pct:35, meetings_harm:5, aai:2.17, perf:3.00, cc:2.50, wb:2.25, inc:3.00},
+  {role:"Data",          team_size:5,  tenure:48, sector:"Tech",             timezone:"±3h",         remote_days:3, mode:"Hybride",         meeting_hours:6,   meeting_pct:20, meetings_harm:4, aai:2.17, perf:3.40, cc:3.50, wb:2.88, inc:3.11},
+  {role:"Dev",           team_size:5,  tenure:49, sector:"Tech",             timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:7,   meeting_pct:30, meetings_harm:3, aai:2.17, perf:2.80, cc:3.25, wb:3.13, inc:3.33},
+  {role:"Produit (PO/PM)",team_size:5, tenure:16, sector:"Tech",             timezone:"Même fuseau", remote_days:2, mode:"Hybride",         meeting_hours:6,   meeting_pct:25, meetings_harm:4, aai:2.17, perf:3.00, cc:2.75, wb:2.75, inc:3.11},
+  {role:"Autre",         team_size:5,  tenure:2,  sector:"Autre",            timezone:"Même fuseau", remote_days:1, mode:"Synchrone-first",  meeting_hours:1,   meeting_pct:25, meetings_harm:3, aai:3.50, perf:3.60, cc:3.50, wb:2.63, inc:3.00},
+  {role:"Dev",           team_size:4,  tenure:8,  sector:"Industrie",        timezone:"Même fuseau", remote_days:2, mode:"Hybride",         meeting_hours:2,   meeting_pct:15, meetings_harm:4, aai:2.83, perf:2.80, cc:2.75, wb:3.50, inc:3.78},
+  {role:"Autre",         team_size:35, tenure:24, sector:"Tech",             timezone:">3h",         remote_days:3, mode:"Hybride",         meeting_hours:11,  meeting_pct:10, meetings_harm:1, aai:2.83, perf:2.20, cc:3.00, wb:2.88, inc:4.11},
+  {role:"Produit (PO/PM)",team_size:6, tenure:47, sector:"Tech",             timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:6,   meeting_pct:30, meetings_harm:4, aai:2.00, perf:3.40, cc:2.50, wb:3.00, inc:3.44},
+  {role:"Produit (PO/PM)",team_size:8, tenure:62, sector:"Conseil",          timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:10,  meeting_pct:30, meetings_harm:4, aai:2.17, perf:2.80, cc:2.75, wb:3.13, inc:3.56},
+  {role:"Produit (PO/PM)",team_size:5, tenure:38, sector:"Tech",             timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:10,  meeting_pct:30, meetings_harm:5, aai:2.67, perf:2.80, cc:2.50, wb:3.00, inc:2.78},
+  {role:"Data",          team_size:7,  tenure:78, sector:"Banque-Assurance", timezone:"±3h",         remote_days:2, mode:"Synchrone-first",  meeting_hours:15,  meeting_pct:40, meetings_harm:5, aai:2.17, perf:3.20, cc:2.75, wb:2.38, inc:3.00},
+  {role:"Dev",           team_size:7,  tenure:10, sector:"Tech",             timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:5,   meeting_pct:20, meetings_harm:4, aai:2.00, perf:2.80, cc:2.75, wb:2.63, inc:3.11},
+  {role:"Design",        team_size:2,  tenure:37, sector:"Tech",             timezone:"Même fuseau", remote_days:2, mode:"Hybride",         meeting_hours:9.5, meeting_pct:25, meetings_harm:2, aai:1.67, perf:3.60, cc:3.25, wb:2.88, inc:4.22},
+  {role:"RH",            team_size:14, tenure:37, sector:"Banque-Assurance", timezone:"Même fuseau", remote_days:1, mode:"Synchrone-first",  meeting_hours:12,  meeting_pct:35, meetings_harm:5, aai:1.17, perf:2.00, cc:2.75, wb:2.00, inc:2.44},
+  {role:"Produit (PO/PM)",team_size:11,tenure:12, sector:"Banque-Assurance", timezone:"Même fuseau", remote_days:2, mode:"Hybride",         meeting_hours:10,  meeting_pct:30, meetings_harm:5, aai:1.67, perf:3.60, cc:3.00, wb:2.38, inc:2.89},
+  {role:"Dev",           team_size:7,  tenure:12, sector:"Conseil",          timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:7,   meeting_pct:20, meetings_harm:5, aai:2.50, perf:2.60, cc:3.25, wb:3.38, inc:3.44},
+  {role:"Dev",           team_size:6,  tenure:32, sector:"Conseil",          timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:5,   meeting_pct:15, meetings_harm:4, aai:1.83, perf:4.20, cc:2.75, wb:2.88, inc:4.33},
+  {role:"Data",          team_size:8,  tenure:13, sector:"Tech",             timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:8,   meeting_pct:22, meetings_harm:5, aai:1.67, perf:2.60, cc:2.50, wb:2.88, inc:3.89},
+  {role:"Produit (PO/PM)",team_size:7, tenure:47, sector:"Tech",             timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:20,  meeting_pct:35, meetings_harm:5, aai:2.00, perf:3.80, cc:2.75, wb:2.63, inc:4.00},
+  {role:"Dev",           team_size:5,  tenure:47, sector:"Banque-Assurance", timezone:"Même fuseau", remote_days:2, mode:"Hybride",         meeting_hours:8,   meeting_pct:21, meetings_harm:5, aai:2.33, perf:4.40, cc:3.00, wb:3.38, inc:4.00},
+  {role:"Data",          team_size:2,  tenure:40, sector:"Tech",             timezone:"Même fuseau", remote_days:4, mode:"Synchrone-first",  meeting_hours:7,   meeting_pct:19, meetings_harm:4, aai:1.67, perf:4.00, cc:3.50, wb:3.88, inc:4.11},
+  {role:"Dev",           team_size:5,  tenure:26, sector:"Industrie",        timezone:"±3h",         remote_days:3, mode:"Hybride",         meeting_hours:8,   meeting_pct:22, meetings_harm:4, aai:2.00, perf:4.20, cc:3.75, wb:4.00, inc:3.89},
+  {role:"Produit (PO/PM)",team_size:6, tenure:19, sector:"Banque-Assurance", timezone:"Même fuseau", remote_days:1, mode:"Hybride",         meeting_hours:9,   meeting_pct:26, meetings_harm:3, aai:2.33, perf:3.80, cc:3.25, wb:4.00, inc:3.78},
+  {role:"Autre",         team_size:9,  tenure:43, sector:"Tech",             timezone:"±3h",         remote_days:3, mode:"Synchrone-first",  meeting_hours:20,  meeting_pct:60, meetings_harm:4, aai:3.50, perf:3.40, cc:3.25, wb:2.75, inc:4.78},
+  {role:"Data",          team_size:2,  tenure:31, sector:"Tech",             timezone:"Même fuseau", remote_days:3, mode:"Synchrone-first",  meeting_hours:6,   meeting_pct:17, meetings_harm:4, aai:2.00, perf:4.00, cc:3.00, wb:3.25, inc:3.44},
+  {role:"Dev",           team_size:5,  tenure:13, sector:"Tech",             timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:5,   meeting_pct:15, meetings_harm:4, aai:2.83, perf:4.40, cc:3.75, wb:4.00, inc:3.78},
+  {role:"Produit (PO/PM)",team_size:9, tenure:45, sector:"Banque-Assurance", timezone:"Même fuseau", remote_days:2, mode:"Synchrone-first",  meeting_hours:9,   meeting_pct:26, meetings_harm:5, aai:2.17, perf:4.00, cc:3.50, wb:3.50, inc:4.11},
+  {role:"Dev",           team_size:6,  tenure:27, sector:"Tech",             timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:7,   meeting_pct:21, meetings_harm:5, aai:2.33, perf:4.20, cc:3.50, wb:4.00, inc:4.33},
+  {role:"Data",          team_size:3,  tenure:54, sector:"Banque-Assurance", timezone:"Même fuseau", remote_days:2, mode:"Hybride",         meeting_hours:8,   meeting_pct:20, meetings_harm:5, aai:2.50, perf:4.40, cc:3.50, wb:4.25, inc:4.00},
+  {role:"Data",          team_size:4,  tenure:31, sector:"Tech",             timezone:"±3h",         remote_days:3, mode:"Hybride",         meeting_hours:7,   meeting_pct:20, meetings_harm:5, aai:2.83, perf:4.20, cc:2.75, wb:3.88, inc:3.89},
+  {role:"Dev",           team_size:4,  tenure:52, sector:"Tech",             timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:5,   meeting_pct:25, meetings_harm:5, aai:2.50, perf:4.00, cc:3.50, wb:3.88, inc:4.11},
+  {role:"Produit (PO/PM)",team_size:9, tenure:18, sector:"Tech",             timezone:"Même fuseau", remote_days:2, mode:"Synchrone-first",  meeting_hours:9,   meeting_pct:12, meetings_harm:4, aai:2.00, perf:2.80, cc:3.00, wb:3.50, inc:3.67},
+  {role:"Dev",           team_size:6,  tenure:27, sector:"Conseil",          timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:2,   meeting_pct:17, meetings_harm:4, aai:2.67, perf:4.20, cc:3.75, wb:3.88, inc:3.44},
+  {role:"Dev",           team_size:11, tenure:34, sector:"Tech",             timezone:"Même fuseau", remote_days:3, mode:"Hybride",         meeting_hours:3,   meeting_pct:10, meetings_harm:4, aai:2.17, perf:4.00, cc:3.00, wb:4.38, inc:3.78},
+  {role:"Produit (PO/PM)",team_size:7, tenure:10, sector:"Tech",             timezone:"Même fuseau", remote_days:2, mode:"Synchrone-first",  meeting_hours:5,   meeting_pct:15, meetings_harm:5, aai:2.17, perf:4.00, cc:3.25, wb:4.50, inc:3.56},
+  {role:"Autre",         team_size:41, tenure:41, sector:"Tech",             timezone:"±3h",         remote_days:2, mode:"Synchrone-first",  meeting_hours:20,  meeting_pct:60, meetings_harm:5, aai:2.83, perf:3.80, cc:2.75, wb:2.88, inc:3.22},
+];
+
+// ── Utilitaires statistiques ──────────────────────────
+function avg(arr) {
+  const a = arr.filter(v => v != null && !isNaN(v));
+  return a.length ? a.reduce((s,v) => s+v, 0) / a.length : 0;
+}
+function rnd(v, d=2) { return Math.round(v * 10**d) / 10**d; }
+function std(arr) {
+  const m = avg(arr);
+  return Math.sqrt(avg(arr.map(v => (v-m)**2)));
+}
+function corr(xs, ys) {
+  const n = xs.length;
+  if (n < 3) return 0;
+  const mx = avg(xs), my = avg(ys);
+  let num = 0, dx2 = 0, dy2 = 0;
+  for (let i=0; i<n; i++) {
+    num  += (xs[i]-mx)*(ys[i]-my);
+    dx2  += (xs[i]-mx)**2;
+    dy2  += (ys[i]-my)**2;
+  }
+  const denom = Math.sqrt(dx2*dy2);
+  return denom===0 ? 0 : num/denom;
+}
+// Pearson p-value via t-distribution approx (beta regularisée)
+function gammaln(x) {
+  const c=[76.18009172947146,-86.50532032941677,24.01409824083091,
+           -1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+  let y=x, tmp=x+5.5;
+  tmp -= (x+0.5)*Math.log(tmp);
+  let s=1.000000000190015;
+  for(let i=0;i<6;i++) s+=c[i]/++y;
+  return -tmp+Math.log(2.5066282746310005*s/x);
+}
+function betacf(a,b,x) {
+  const MAXIT=200,EPS=3e-7,FPMIN=1e-30;
+  let qab=a+b,qap=a+1,qam=a-1;
+  let c=1,d=1-qab*x/qap;
+  if(Math.abs(d)<FPMIN) d=FPMIN;
+  d=1/d; let h=d;
+  for(let m=1;m<=MAXIT;m++){
+    let m2=2*m;
+    let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+    d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN;
+    c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN;
+    d=1/d; h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+    d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN;
+    c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN;
+    d=1/d; let del=d*c; h*=del;
+    if(Math.abs(del-1)<EPS) break;
+  }
+  return h;
+}
+function betai(a,b,x) {
+  if(x<0||x>1) return 0;
+  if(x===0||x===1) return x;
+  const lbeta=gammaln(a)+gammaln(b)-gammaln(a+b);
+  const bt=Math.exp(Math.log(x)*a+Math.log(1-x)*b-lbeta);
+  return x<(a+1)/(a+b+2) ? bt*betacf(a,b,x)/a : 1-bt*betacf(b,a,1-x)/b;
+}
+function pValue(r, n) {
+  if (n <= 2) return 1;
+  const t = r*Math.sqrt((n-2)/(1-r*r+1e-15));
+  const x = (n-2)/(n-2+t*t);
+  return betai((n-2)/2, 0.5, x);
+}
+function pStars(p) {
+  return p<0.001?'***':p<0.01?'**':p<0.05?'*':p<0.10?'†':'';
+}
+function linReg(xs, ys) {
+  const n=xs.length, mx=avg(xs), my=avg(ys);
+  let num=0, den=0;
+  for(let i=0;i<n;i++){num+=(xs[i]-mx)*(ys[i]-my);den+=(xs[i]-mx)**2;}
+  const slope=den?num/den:0;
+  return {slope, intercept:my-slope*mx};
+}
+function histogram(vals, bins=8) {
+  const mn=Math.min(...vals), mx=Math.max(...vals);
+  const bw=(mx-mn)/bins||1;
+  const edges=Array.from({length:bins+1},(_,i)=>mn+i*bw);
+  const counts=Array(bins).fill(0);
+  vals.forEach(v=>{let b=Math.floor((v-mn)/bw); if(b===bins)b--;counts[b]++;});
+  const labels=edges.slice(0,-1).map((e,i)=>`${rnd(e,1)}–${rnd(edges[i+1],1)}`);
+  return {labels,counts};
+}
+function modeColor(mode) {
+  return mode==='Hybride'?'#4f46e5':mode==='Synchrone-first'?'#ef4444':'#10b981';
+}
+function modeColorA(mode,a=0.15) {
+  return mode==='Hybride'?`rgba(79,70,229,${a})`:mode==='Synchrone-first'?`rgba(239,68,68,${a})`:`rgba(16,185,129,${a})`;
+}
+
+// ── Stub renderAll — sera complété en Bloc 9 ──────────
+function renderAll() {
+  if (typeof renderSynthese === 'function') renderSynthese();
+  if (typeof renderProfil === 'function') renderProfil();
+  if (typeof renderReunions === 'function') renderReunions();
+  if (typeof renderDistributions === 'function') renderDistributions();
+  if (typeof renderH1 === 'function') renderH1();
+  if (typeof renderH2 === 'function') renderH2();
+  if (typeof renderH3 === 'function') renderH3();
+  if (typeof renderCorrelations === 'function') renderCorrelations();
+}
+
+// ── Registre des graphiques (doit précéder l'IIFE) ────
+const CHARTS = {};
+function destroyChart(id) { if(CHARTS[id]){CHARTS[id].destroy();delete CHARTS[id];} }
+
+// ══════════════════════════════════════════════════════
+// GLOSSAIRE — définitions des acronymes & termes clés
+// ══════════════════════════════════════════════════════
+const GLOSSARY = [
+  // Scores composites
+  { term:'AAI',              def:'Agilité Asynchrone Individuelle — score composite (6 items, 1-5) mesurant le degré d\'adoption des pratiques de travail en mode asynchrone.' },
+  { term:'WB',               def:'Well-Being — score de bien-être au travail (8 items, 1-5). Items WB1 (fatigue), WB2 (stress), WB7 (pression) inversés : 6 - valeur.' },
+  { term:'Bien-être',        def:'Score de bien-être au travail (abrégé WB) — 8 items sur échelle 1-5 mesurant la santé psychologique au travail.' },
+  { term:'CC',               def:'Clarté & Collaboration — score composite (4 items, 1-5) mesurant la qualité des communications et la fluidité de la collaboration. Item CC3 (interruptions) inversé.' },
+  { term:'Inclusion',        def:'Score d\'inclusion et d\'équité perçues dans la collaboration (9 items, 1-5) — mesure si chaque membre peut contribuer équitablement.' },
+  { term:'Performance',      def:'Performance auto-perçue — score composite (5 items, 1-5) mesurant le sentiment de productivité et d\'atteinte des objectifs.' },
+  { term:'Perf.',            def:'Performance auto-perçue — score composite (5 items, 1-5).' },
+  // Modes de travail
+  { term:'Hybride',          def:'Mode de fonctionnement mixte : combine réunions en présentiel/visio et communication différée (emails, messagerie, docs partagés).' },
+  { term:'Synchrone-first',  def:'Mode où la coordination repose principalement sur des échanges en temps réel (réunions, appels). La présence simultanée est la norme.' },
+  { term:'Asynchrone-first', def:'Mode où la coordination repose principalement sur des échanges différés (écrits, enregistrements, docs). Aucune présence simultanée requise.' },
+  { term:'async',            def:'Asynchrone — communication ou travail ne nécessitant pas la présence simultanée de tous les participants.' },
+  { term:'sync',             def:'Synchrone — communication en temps réel nécessitant la co-présence (réunion, appel, visio).' },
+  // Statistiques
+  { term:'r =',              def:'Coefficient de corrélation de Pearson (r) — mesure la force et le sens d\'une relation linéaire entre deux variables. Varie de -1 (relation négative parfaite) à +1 (relation positive parfaite).' },
+  { term:'p =',              def:'p-value — probabilité d\'observer un résultat au moins aussi extrême si l\'hypothèse nulle est vraie. Seuil conventionnel : p < 0,05.' },
+  { term:'p-value',          def:'Probabilité sous hypothèse nulle. Seuils : p<0,05 (*), p<0,01 (**), p<0,001 (***), p<0,10 (†).' },
+  { term:'ns',               def:'Non significatif — la corrélation ou la différence observée peut être due au hasard (p ≥ 0,05).' },
+  { term:'sig.',             def:'Statistiquement significatif — probabilité inférieure au seuil alpha de 0,05 d\'obtenir ce résultat par hasard.' },
+  { term:'skew',             def:'Skewness (asymétrie) — mesure dans quelle direction la distribution penche. Valeur positive = queue à droite (valeurs élevées rares) ; négative = queue à gauche.' },
+  // Hypothèses
+  { term:'H1',               def:'Hypothèse 1 : les pratiques asynchrones (AAI) sont positivement associées au bien-être et à la performance perçus.' },
+  { term:'H2',               def:'Hypothèse 2 : les pratiques asynchrones sont positivement associées au sentiment d\'inclusion et d\'équité.' },
+  { term:'H3',               def:'Hypothèse 3 : les équipes asynchrones performent différemment selon des facteurs contextuels (taille, ancienneté, secteur, fuseau horaire).' },
+  // Autres termes
+  { term:'deep work',        def:'Travail en concentration profonde, sans interruption — notion de Cal Newport désignant les périodes de travail cognitif intense.' },
+  { term:'r biserial',       def:'Corrélation bisériale point — version du coefficient de Pearson pour une variable binaire (ex. mode Hybride vs Sync-first) et une variable continue.' },
+];
+
+// Construit le panneau glossaire visible
+function buildGlossary() {
+  const body = document.getElementById('glossary-body');
+  if (!body) return;
+  body.innerHTML = GLOSSARY.map(g =>
+    `<div class="glossary-entry">
+      <span class="glossary-key">${g.term}</span>
+      <span class="glossary-def"> — ${g.def}</span>
+    </div>`
+  ).join('');
+}
+
+function toggleGlossary() {
+  const body   = document.getElementById('glossary-body');
+  const caret  = document.getElementById('glossary-caret');
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  if (caret) caret.textContent = open ? '▾ masquer' : '▸ afficher';
+}
+
+// Annote le HTML d'un panneau interp avec les termes du glossaire
+function annotateHTML(html) {
+  // Remplace uniquement dans le texte entre balises (pas dans les attributs)
+  return html.replace(/>[^<]+</g, seg => {
+    let inner = seg.slice(1, -1);
+    GLOSSARY.forEach(g => {
+      // Éviter de double-annoter
+      if (inner.includes('class="gterm"')) return;
+      const escaped = g.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp('(?<![\\w-])(' + escaped + ')(?![\\w-])', 'g');
+      const def = g.def.replace(/"/g, '&quot;');
+      inner = inner.replace(re, `<span class="gterm" data-def="${def}">$1</span>`);
+    });
+    return '>' + inner + '<';
+  });
+}
+
+// setInterp avec annotation automatique
+function setInterp(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = annotateHTML(html.trim());
+}
+
+// ── Tooltip JS flottant (position:fixed — jamais clippé) ──
+(function initTooltip() {
+  const tip = document.createElement('div');
+  tip.id = 'js-tip';
+  document.body.appendChild(tip);
+
+  let activeTarget = null;
+
+  document.addEventListener('mouseover', e => {
+    const t = e.target.closest('[data-def]');
+    if (!t) return;
+    activeTarget = t;
+    tip.textContent = t.dataset.def;
+    tip.classList.add('visible');
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!activeTarget) return;
+    const x = e.clientX + 14;
+    const y = e.clientY - 44;
+    tip.style.left = Math.min(x, window.innerWidth  - 274) + 'px';
+    tip.style.top  = Math.max(y, 6) + 'px';
+  });
+
+  document.addEventListener('mouseout', e => {
+    const t = e.target.closest('[data-def]');
+    if (!t) return;
+    activeTarget = null;
+    tip.classList.remove('visible');
+  });
+})();
+
+// Annote les titres et labels statiques du DOM
+function annotateStaticEls() {
+  const selectors = ['.chart-title span', '.section-title', '.kpi-lbl', 'th', '.nav-btn'];
+  selectors.forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => {
+      if (el.querySelector('.gterm')) return; // déjà annoté
+      el.innerHTML = annotateHTML('>' + el.innerHTML + '<').slice(1, -1);
+    });
+  });
+}
+
+// ── Initialisation ────────────────────────────────────
+(function initDashboard() {
+  populateFilterSelects(EMBEDDED_DATA);
+
+  // Peupler dynamiquement le select timezone
+  const tzSel = document.getElementById('f-tz');
+  if (tzSel) {
+    const tzVals = [...new Set(EMBEDDED_DATA.map(d=>d.timezone))].sort();
+    tzVals.forEach(tz => {
+      const o = document.createElement('option');
+      o.value = tz; o.textContent = tz;
+      tzSel.appendChild(o);
+    });
+  }
+
+  // KPIs de l'en-tête
+  const n  = EMBEDDED_DATA.length;
+  const nH = EMBEDDED_DATA.filter(d=>d.mode==='Hybride').length;
+  const nS = EMBEDDED_DATA.filter(d=>d.mode==='Synchrone-first').length;
+  const nA = EMBEDDED_DATA.filter(d=>d.mode==='Asynchrone-first').length;
+  const meanAAI  = rnd(avg(EMBEDDED_DATA.map(d=>d.aai)));
+  const meanWB   = rnd(avg(EMBEDDED_DATA.map(d=>d.wb)));
+  const meanPerf = rnd(avg(EMBEDDED_DATA.map(d=>d.perf)));
+
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('hdr-n',    n);
+  set('hdr-hybrid', nH);
+  set('hdr-sync',   nS);
+  set('hdr-async',  nA);
+  set('hdr-aai',    meanAAI+'/5');
+  set('hdr-wb',     meanWB+'/5');
+  set('hdr-perf',   meanPerf+'/5');
+
+  updateFilterUI();
+  buildGlossary();
+  renderAll();
+  annotateStaticEls();
+})();
+// ═══════════════════════════════════════════════════════
+// BLOC 3 — SECTION "PROFIL ÉCHANTILLON"
+// ═══════════════════════════════════════════════════════
+// (renderProfil défini plus bas — hoisted)
+
+// ═══════════════════════════════════════════════════════
+// BLOC 4 — SECTION "CHARGE DE RÉUNIONS"
+// IDs : chart-dist-mp, chart-mh-mode, chart-harm-mode, chart-mp-aai
+// ═══════════════════════════════════════════════════════
+
+function renderReunions() {
+  const data = filteredData();
+  const n = data.length;
+  if (n === 0) return;
+
+  const modes   = ['Hybride', 'Synchrone-first'];
+  const mColors = modes.map(m => modeColor(m));
+  const mColorsA= modes.map(m => modeColorA(m, 0.75));
+
+  // ── 1. Histogramme — % temps en réunion ──────────────
+  destroyChart('chart-dist-mp');
+  {
+    const vals = data.map(d => d.meeting_pct);
+    const {labels, counts} = histogram(vals, 8);
+    CHARTS['chart-dist-mp'] = new Chart(document.getElementById('chart-dist-mp'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: counts, backgroundColor: 'rgba(79,70,229,0.7)',
+        borderColor: '#4f46e5', borderWidth: 1, borderRadius: 4 }] },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { title: { display: true, text: '% du temps de travail' } },
+          y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: 'Effectif' } }
+        }
+      }
+    });
+    const meanMP = rnd(avg(vals), 1);
+    const medVals = [...vals].sort((a,b)=>a-b);
+    const medMP  = medVals[Math.floor(medVals.length/2)];
+    const heavy  = data.filter(d => d.meeting_pct >= 30).length;
+    setInterp('interp-dist-mp', `
+      <b>Distribution du % temps en réunion (n=${n})</b><br>
+      Moyenne : <b>${meanMP}%</b> · Médiane : <b>${medMP}%</b> · Max : ${Math.max(...vals)}%.<br>
+      <b>${rnd(heavy/n*100,1)}%</b> des répondants (n=${heavy}) consacrent ≥ 30% de leur temps à des réunions.
+      Un taux élevé est souvent associé à une charge cognitive accrue et une moindre disponibilité
+      pour le travail en profondeur (deep work) — terrain propice aux pratiques asynchrones.
+    `);
+  }
+
+  // ── 2. Barres groupées — Heures réunion par mode ─────
+  destroyChart('chart-mh-mode');
+  {
+    const byMode = modes.map(m => {
+      const sub = data.filter(d => d.mode === m);
+      return { n: sub.length, mean: rnd(avg(sub.map(d => d.meeting_hours)), 1) };
+    });
+    CHARTS['chart-mh-mode'] = new Chart(document.getElementById('chart-mh-mode'), {
+      type: 'bar',
+      data: {
+        labels: modes.map((m,i) => `${m}\n(n=${byMode[i].n})`),
+        datasets: [{
+          label: 'Moy. heures réunion / sem',
+          data: byMode.map(b => b.mean),
+          backgroundColor: mColorsA,
+          borderColor: mColors,
+          borderWidth: 2,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.raw} h/sem` } } },
+        scales: {
+          y: { beginAtZero: true, title: { display: true, text: 'Heures / semaine' } }
+        }
+      }
+    });
+    const diff = rnd(byMode[1].mean - byMode[0].mean, 1);
+    setInterp('interp-mh-mode', `
+      <b>Heures de réunion par mode (n=${n})</b><br>
+      Hybride : <b>${byMode[0].mean} h/sem</b> (n=${byMode[0].n}) ·
+      Synchrone-first : <b>${byMode[1].mean} h/sem</b> (n=${byMode[1].n}).<br>
+      ${diff > 0
+        ? `Les équipes Synchrone-first réunissent <b>${diff} h de plus</b> par semaine.`
+        : `Les équipes Hybrides réunissent <b>${Math.abs(diff)} h de plus</b> par semaine.`}
+      Cette différence illustre comment le mode de coordination influence directement
+      la charge en réunions et potentiellement la disponibilité pour le travail async.
+    `);
+  }
+
+  // ── 3. Barres — Nuisibilité perçue par mode ──────────
+  destroyChart('chart-harm-mode');
+  {
+    const harmLevels = [1, 2, 3, 4, 5];
+    const datasets = modes.map((m, mi) => {
+      const sub = data.filter(d => d.mode === m);
+      return {
+        label: m,
+        data: harmLevels.map(h => sub.filter(d => d.meetings_harm === h).length),
+        backgroundColor: modeColorA(m, 0.75),
+        borderColor: modeColor(m),
+        borderWidth: 2,
+        borderRadius: 4
+      };
+    });
+    CHARTS['chart-harm-mode'] = new Chart(document.getElementById('chart-harm-mode'), {
+      type: 'bar',
+      data: {
+        labels: ['1 — Pas du tout', '2', '3 — Modérément', '4', '5 — Totalement'],
+        datasets
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } } },
+        scales: {
+          x: { title: { display: true, text: 'Nuisibilité perçue (1–5)' } },
+          y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: 'Effectif' } }
+        }
+      }
+    });
+    const meanHarmH = rnd(avg(data.filter(d=>d.mode==='Hybride').map(d=>d.meetings_harm)), 2);
+    const meanHarmS = rnd(avg(data.filter(d=>d.mode==='Synchrone-first').map(d=>d.meetings_harm)), 2);
+    const rHarm = corr(data.map(d=>d.meeting_pct), data.map(d=>d.meetings_harm));
+    const pHarm = pValue(rHarm, n);
+    setInterp('interp-harm-mode', `
+      <b>Nuisibilité perçue des réunions par mode (n=${n})</b><br>
+      Hybride : moy. <b>${meanHarmH}/5</b> · Synchrone-first : moy. <b>${meanHarmS}/5</b>.<br>
+      Corrélation nuisibilité × % réunions : r = <b>${rnd(rHarm,2)}${pStars(pHarm)}</b>
+      (p = ${rnd(pHarm,3)}).
+      Une nuisibilité élevée signale des réunions perçues comme non nécessaires —
+      moteur potentiel d'adoption de pratiques asynchrones alternatives.
+    `);
+  }
+
+  // ── 4. Scatter — % réunion vs AAI + régression ───────
+  destroyChart('chart-mp-aai');
+  {
+    const modeList = [...new Set(data.map(d => d.mode))];
+    const datasets = modeList.map(m => ({
+      label: m,
+      data: data.filter(d => d.mode === m).map(d => ({ x: d.meeting_pct, y: d.aai })),
+      backgroundColor: modeColorA(m, 0.7),
+      borderColor: modeColor(m),
+      borderWidth: 1,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      type: 'scatter'
+    }));
+
+    // Droite de régression globale
+    const xs = data.map(d => d.meeting_pct);
+    const ys = data.map(d => d.aai);
+    const {slope, intercept} = linReg(xs, ys);
+    const xMin = Math.min(...xs), xMax = Math.max(...xs);
+    datasets.push({
+      label: 'Régression linéaire',
+      data: [{ x: xMin, y: slope*xMin+intercept }, { x: xMax, y: slope*xMax+intercept }],
+      type: 'line',
+      borderColor: '#6b7280',
+      borderWidth: 2,
+      borderDash: [5, 4],
+      pointRadius: 0,
+      fill: false,
+      tension: 0
+    });
+
+    CHARTS['chart-mp-aai'] = new Chart(document.getElementById('chart-mp-aai'), {
+      type: 'scatter',
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } },
+          tooltip: { callbacks: {
+            label: ctx => ctx.dataset.type === 'line'
+              ? `Régression : AAI = ${rnd(slope,3)}×MP + ${rnd(intercept,2)}`
+              : ` ${ctx.dataset.label} — MP: ${ctx.parsed.x}%, AAI: ${ctx.parsed.y}`
+          }}
+        },
+        scales: {
+          x: { title: { display: true, text: '% temps en réunion' }, min: 0 },
+          y: { title: { display: true, text: 'Score AAI (1–5)' }, min: 1, max: 5 }
+        }
+      }
+    });
+
+    const r  = corr(xs, ys);
+    const p  = pValue(r, n);
+    const dir = slope < 0 ? 'négative' : 'positive';
+    setInterp('interp-mp-aai', `
+      <b>% Temps en réunion × Score AAI (n=${n})</b><br>
+      r = <b>${rnd(r,2)}${pStars(p)}</b> · p = ${rnd(p,3)} · pente = ${rnd(slope,3)}<br>
+      Relation <b>${dir}</b>
+      ${p < 0.05 ? '— <b>statistiquement significative</b> (p&lt;0,05).' : '— non significative au seuil 5%.'}
+      ${slope < 0
+        ? "Les répondants exposés à une charge de réunions plus lourde affichent des scores AAI plus faibles : la pression synchrone freinerait l'adoption des pratiques async."
+        : "Contre-intuitivement, la charge de réunions n'est pas négativement liée à l'AAI dans cet échantillon."}
+      Interprétation prudente requise (n=${n}, intervalles de confiance larges).
+    `);
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════
+// BLOC 9 — SECTION CORRÉLATIONS + TABLEAU COMPARATIF
+// ═══════════════════════════════════════════════════════
+
+function renderCorrelations() {
+  const data = filteredData();
+  const n = data.length;
+  if (n === 0) return;
+
+  // ── Variables de la matrice ───────────────────────────
+  const VARS = [
+    { key: 'aai',           label: 'AAI' },
+    { key: 'wb',            label: 'Bien-être' },
+    { key: 'perf',          label: 'Performance' },
+    { key: 'inc',           label: 'Inclusion' },
+    { key: 'cc',            label: 'CC' },
+    { key: 'meeting_pct',   label: '% Réunions' },
+    { key: 'meeting_hours', label: 'H. réunion' },
+    { key: 'meetings_harm', label: 'Nuisibilité' },
+  ];
+
+  // Couleur de cellule : blanc → vert (r>0) / rouge (r<0)
+  function corrCell(r) {
+    const v = Math.min(Math.abs(r), 1);
+    if (r >= 0) {
+      const R = Math.round(255*(1-v) + 22*v);
+      const G = Math.round(255*(1-v) + 163*v);
+      const B = Math.round(255*(1-v) + 74*v);
+      return { bg: `rgb(${R},${G},${B})`, fg: v > 0.45 ? '#fff' : '#1e293b' };
+    } else {
+      const R = Math.round(255*(1-v) + 239*v);
+      const G = Math.round(255*(1-v) + 68*v);
+      const B = Math.round(255*(1-v) + 68*v);
+      return { bg: `rgb(${R},${G},${B})`, fg: v > 0.45 ? '#fff' : '#1e293b' };
+    }
+  }
+
+  // ── 1. Heatmap HTML ───────────────────────────────────
+  const hmEl = document.getElementById('hm-n');
+  if (hmEl) hmEl.textContent = n;
+
+  // Pré-calculer toutes les corrélations (utilisé par heatmap ET Figure 3)
+  const matrix = VARS.map(v1 => VARS.map(v2 => {
+    if (v1.key === v2.key) return { r: 1, p: 0 };
+    const xs = data.map(d => d[v1.key]);
+    const ys = data.map(d => d[v2.key]);
+    const r  = corr(xs, ys);
+    return { r, p: pValue(r, n) };
+  }));
+
+  const hmContainer = document.getElementById('heatmap-container');
+  if (hmContainer) {
+
+    let html = `<table style="border-collapse:collapse;font-size:11px;min-width:600px;width:100%">`;
+    // Header row
+    html += `<tr><th style="padding:6px 4px;background:#f8fafc"></th>`;
+    VARS.forEach(v => {
+      html += `<th style="padding:6px 4px;background:#f8fafc;font-weight:600;color:#64748b;
+               text-align:center;white-space:nowrap;max-width:70px;overflow:hidden">${v.label}</th>`;
+    });
+    html += `</tr>`;
+
+    matrix.forEach((row, i) => {
+      html += `<tr>`;
+      html += `<td style="padding:6px 8px;font-weight:600;color:#64748b;white-space:nowrap;
+               background:#f8fafc">${VARS[i].label}</td>`;
+      row.forEach((cell, j) => {
+        if (i === j) {
+          html += `<td style="padding:6px 4px;text-align:center;background:#e2e8f0;
+                   font-weight:700;color:#475569">—</td>`;
+        } else {
+          const { bg, fg } = corrCell(cell.r);
+          const stars = pStars(cell.p);
+          html += `<td style="padding:6px 4px;text-align:center;background:${bg};
+                   color:${fg};font-weight:${Math.abs(cell.r)>0.3?'700':'400'};cursor:default"
+                   title="${VARS[i].label} × ${VARS[j].label} : r=${rnd(cell.r,3)}, p=${rnd(cell.p,3)}">
+                   ${rnd(cell.r,2)}${stars}</td>`;
+        }
+      });
+      html += `</tr>`;
+    });
+    html += `</table>`;
+    hmContainer.innerHTML = annotateHTML(html);
+
+    // Trouver les 3 corrélations les plus fortes (hors diagonale, triangle sup)
+    const pairs = [];
+    for (let i=0; i<VARS.length; i++) {
+      for (let j=i+1; j<VARS.length; j++) {
+        pairs.push({ v1: VARS[i].label, v2: VARS[j].label,
+                     r: matrix[i][j].r, p: matrix[i][j].p });
+      }
+    }
+    pairs.sort((a,b) => Math.abs(b.r) - Math.abs(a.r));
+    const top3 = pairs.slice(0, 3);
+
+    setInterp('interp-heatmap', `
+      <b>Matrice de corrélations de Pearson (n=${n}, ${VARS.length} variables)</b><br>
+      Top 3 associations : ${top3.map(p =>
+        `<b>${p.v1} × ${p.v2}</b> (r=${rnd(p.r,2)}${pStars(p.p)}, p=${rnd(p.p,3)})`
+      ).join(" · ")}<br>
+      Les cellules vertes signalent des corrélations positives, rouges des corrélations négatives.
+      Seules les corrélations marquées * (p&lt;0,05) peuvent être interprétées avec confiance
+      avec n=${n} répondants.
+    `);
+  }
+
+  // ── 1b. Figure 3 — Bar chart corrélations triées ────────
+  {
+    destroyChart('chart-fig3');
+    const allPairs = [];
+    for (let i = 0; i < VARS.length; i++) {
+      for (let j = i + 1; j < VARS.length; j++) {
+        const r3 = matrix[i][j].r;
+        const p3 = matrix[i][j].p;
+        if (r3 === null) continue;
+        allPairs.push({
+          label: `${VARS[i].label} × ${VARS[j].label}`,
+          r: r3, p: p3
+        });
+      }
+    }
+    allPairs.sort((a, b) => Math.abs(b.r) - Math.abs(a.r));
+
+    function sigColor(r3, p3) {
+      const pos = r3 >= 0;
+      if (p3 < 0.001) return pos ? '#059669' : '#dc2626';
+      if (p3 < 0.01)  return pos ? '#10b981' : '#ef4444';
+      if (p3 < 0.05)  return pos ? '#6ee7b7' : '#fca5a5';
+      if (p3 < 0.10)  return pos ? '#d1fae5' : '#fee2e2';
+      return '#cbd5e1';
+    }
+    function sigBorder(r3, p3) {
+      const pos = r3 >= 0;
+      if (p3 < 0.001) return pos ? '#065f46' : '#991b1b';
+      if (p3 < 0.01)  return pos ? '#059669' : '#dc2626';
+      if (p3 < 0.05)  return pos ? '#10b981' : '#ef4444';
+      if (p3 < 0.10)  return pos ? '#6ee7b7' : '#fca5a5';
+      return '#94a3b8';
+    }
+
+    const fig3Labels = allPairs.map(p3 => p3.label + " " + pStars(p3.p));
+    const fig3Values = allPairs.map(p3 => rnd(p3.r, 3));
+    const fig3Colors = allPairs.map(p3 => sigColor(p3.r, p3.p));
+    const fig3Borders = allPairs.map(p3 => sigBorder(p3.r, p3.p));
+
+    const fig3El = document.getElementById('chart-fig3');
+    if (fig3El) {
+      CHARTS['chart-fig3'] = new Chart(fig3El, {
+        type: 'bar',
+        data: {
+          labels: fig3Labels,
+          datasets: [{
+            label: 'r de Pearson',
+            data: fig3Values,
+            backgroundColor: fig3Colors,
+            borderColor: fig3Borders,
+            borderWidth: 1.5
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: {
+              label: ctx => {
+                const pair3 = allPairs[ctx.dataIndex];
+                return `r = ${rnd(pair3.r, 3)}${pStars(pair3.p)} · p = ${rnd(pair3.p, 4)}`;
+              }
+            }}
+          },
+          scales: {
+            x: {
+              min: -1, max: 1,
+              grid: { color: '#e2e8f0' },
+              ticks: { font: { size: 9 } },
+              title: { display: true, text: "Coefficient de corrélation r", font: { size: 10 } }
+            },
+            y: { ticks: { font: { size: 9 } } }
+          }
+        }
+      });
+    }
+
+    const top = allPairs[0];
+    const sig5 = allPairs.filter(p3 => p3.p < 0.05);
+    setInterp('interp-fig3', `
+      <b>Corrélations classées — n=${n}, ${allPairs.length} paires</b><br>
+      Association la plus forte : <b>${top.label}</b> (r=${rnd(top.r,2)}${pStars(top.p)}, p=${rnd(top.p,3)})<br>
+      ${sig5.length} paire(s) significative(s) au seuil 5 % ·
+      Vert foncé = positive très sig. · Rouge foncé = négative très sig. · Gris = non sig.
+    `);
+  }
+
+  // ── 2. Scatter pairs (chart-wrap-sm, 6 paires) ───────
+  const PAIRS = [
+    { id:'chart-c-aai-wb',   iid:'interp-c-aai-wb',   xk:'aai', yk:'wb',   xl:'AAI', yl:'Bien-être' },
+    { id:'chart-c-aai-perf', iid:'interp-c-aai-perf', xk:'aai', yk:'perf', xl:'AAI', yl:'Performance' },
+    { id:'chart-c-aai-inc',  iid:'interp-c-aai-inc',  xk:'aai', yk:'inc',  xl:'AAI', yl:'Inclusion' },
+    { id:'chart-c-wb-perf',  iid:'interp-c-wb-perf',  xk:'wb',  yk:'perf', xl:'Bien-être', yl:'Performance' },
+    { id:'chart-c-inc-wb',   iid:'interp-c-inc-wb',   xk:'inc', yk:'wb',   xl:'Inclusion', yl:'Bien-être' },
+    { id:'chart-c-cc-perf',  iid:'interp-c-cc-perf',  xk:'cc',  yk:'perf', xl:'CC', yl:'Performance' },
+  ];
+
+  PAIRS.forEach(pair => {
+    destroyChart(pair.id);
+    const xs = data.map(d => d[pair.xk]);
+    const ys = data.map(d => d[pair.yk]);
+    const r  = corr(xs, ys);
+    const p  = pValue(r, n);
+    const { slope, intercept } = linReg(xs, ys);
+    const xMin = Math.min(...xs), xMax = Math.max(...xs);
+
+    const modeList = [...new Set(data.map(d => d.mode))];
+    const datasets = modeList.map(m => ({
+      label: m,
+      data: data.filter(d => d.mode === m).map(d => ({ x: d[pair.xk], y: d[pair.yk] })),
+      backgroundColor: modeColorA(m, 0.65),
+      borderColor: modeColor(m),
+      borderWidth: 1,
+      pointRadius: 4,
+      type: 'scatter'
+    }));
+    datasets.push({
+      label: 'Tendance',
+      data: [{ x: xMin, y: slope*xMin+intercept }, { x: xMax, y: slope*xMax+intercept }],
+      type: 'line',
+      borderColor: '#6b7280',
+      borderWidth: 1.5,
+      borderDash: [4, 3],
+      pointRadius: 0,
+      fill: false,
+      tension: 0
+    });
+
+    CHARTS[pair.id] = new Chart(document.getElementById(pair.id), {
+      type: 'scatter',
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx =>
+            ctx.dataset.label === 'Tendance'
+              ? `r=${rnd(r,2)}${pStars(p)} (p=${rnd(p,3)})`
+              : ` ${ctx.dataset.label}: ${pair.xl}=${ctx.parsed.x}, ${pair.yl}=${ctx.parsed.y}`
+          }}
+        },
+        scales: {
+          x: { title: { display: true, text: pair.xl, font: { size: 10 } },
+               suggestedMin: 1, suggestedMax: 5, ticks: { font: { size: 9 } } },
+          y: { title: { display: true, text: pair.yl, font: { size: 10 } },
+               suggestedMin: 1, suggestedMax: 5, ticks: { font: { size: 9 } } }
+        }
+      }
+    });
+
+    const sig = p < 0.05 ? "sig. (p<0,05)" : p < 0.10 ? "marg. (p<0,10)" : "ns";
+    setInterp(pair.iid, `
+      <b>${pair.xl} × ${pair.yl}</b> · r = <b>${rnd(r,3)}${pStars(p)}</b> · p = ${rnd(p,3)} · ${sig}
+    `);
+  });
+
+  // ── 3. Tableaux HTML comparatifs ─────────────────────
+  const IND = [
+    { key:'aai',  label:'AAI' }, { key:'wb', label:'Bien-être' },
+    { key:'perf', label:'Perf.' }, { key:'inc', label:'Inclusion' }, { key:'cc', label:'CC' },
+    { key:'meeting_pct', label:'% Réun.' }, { key:'meeting_hours', label:'H réun.' }
+  ];
+
+  function buildTable(tableId, groupKey, interpId, interpTitle) {
+    const tableEl = document.getElementById(tableId);
+    if (!tableEl) return;
+    const groups = [...new Set(data.map(d => d[groupKey]))].sort();
+
+    let html = `<tr><th>${groupKey === 'mode' ? 'Mode' : groupKey === 'role' ? 'Rôle' : 'Secteur'}</th>
+      <th>n</th>${IND.map(i => `<th>${i.label}</th>`).join('')}</tr>`;
+
+    groups.forEach(g => {
+      const sub = data.filter(d => d[groupKey] === g);
+      const color = groupKey === 'mode' ? modeColor(g) : '#4f46e5';
+      html += `<tr>
+        <td style="font-weight:600;color:${color}">${g}</td>
+        <td style="color:#64748b">${sub.length}</td>
+        ${IND.map(i => {
+          const v = rnd(avg(sub.map(d => d[i.key])), 2);
+          return `<td style="text-align:center">${v}</td>`;
+        }).join('')}
+      </tr>`;
+    });
+
+    // Ligne globale
+    html += `<tr style="background:#f8fafc;font-weight:600">
+      <td>Total</td><td>${n}</td>
+      ${IND.map(i => `<td style="text-align:center">${rnd(avg(data.map(d=>d[i.key])),2)}</td>`).join('')}
+    </tr>`;
+
+    tableEl.innerHTML = annotateHTML(html);
+
+    const best = groups.map(g => ({
+      g, aai: avg(data.filter(d=>d[groupKey]===g).map(d=>d.aai))
+    })).sort((a,b)=>b.aai-a.aai)[0];
+
+    setInterp(interpId, `
+      <b>${interpTitle} (n=${n})</b><br>
+      Groupe avec le score AAI le plus élevé : <b>${best.g}</b>
+      (${rnd(best.aai,2)}/5, n=${data.filter(d=>d[groupKey]===best.g).length}).<br>
+      Tous les scores sont des moyennes sur 5 · % Réun. = % temps de travail en réunions.
+    `);
+  }
+
+  buildTable('mode-table',   'mode',   'interp-table',        'Comparatif par mode');
+  buildTable('role-table',   'role',   'interp-table-role',   'Comparatif par rôle');
+  buildTable('sector-table', 'sector', 'interp-table-sector', "Comparatif par secteur");
+
+  // Mettre à jour le n dans la note de limite
+  const nLimit = document.getElementById('n-limit');
+  if (nLimit) nLimit.textContent = n;
+}
+
+// ═══════════════════════════════════════════════════════
+// BLOC 8 — SECTION H3 "COMPARAISONS AVANCÉES"
+// IDs : chart-radar, chart-scores-sector, chart-scores-role,
+//        chart-tenure-perf, chart-tenure-wb, chart-ts-aai,
+//        chart-remote-scores
+// ═══════════════════════════════════════════════════════
+
+function renderH3() {
+  const data = filteredData();
+  const n = data.length;
+  if (n === 0) return;
+
+  const indicators = [
+    { key: 'aai',  label: 'AAI' },
+    { key: 'wb',   label: 'Bien-être' },
+    { key: 'perf', label: 'Performance' },
+    { key: 'inc',  label: 'Inclusion' },
+    { key: 'cc',   label: 'CC' },
+  ];
+  const modes = ['Hybride', 'Synchrone-first'];
+
+  // ── 1. Radar — Scores par mode ────────────────────────
+  destroyChart('chart-radar');
+  {
+    const datasets = modes.map(m => {
+      const sub = data.filter(d => d.mode === m);
+      return {
+        label: `${m} (n=${sub.length})`,
+        data: indicators.map(ind => sub.length ? rnd(avg(sub.map(d => d[ind.key])), 2) : 0),
+        backgroundColor: modeColorA(m, 0.2),
+        borderColor: modeColor(m),
+        borderWidth: 2,
+        pointBackgroundColor: modeColor(m),
+        pointRadius: 4
+      };
+    });
+
+    CHARTS['chart-radar'] = new Chart(document.getElementById('chart-radar'), {
+      type: 'radar',
+      data: { labels: indicators.map(i => i.label), datasets },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } } },
+        scales: {
+          r: { min: 1, max: 5, ticks: { stepSize: 1, font: { size: 10 } },
+               pointLabels: { font: { size: 12, weight: 'bold' } } }
+        }
+      }
+    });
+
+    const modesScores = modes.map(m => {
+      const sub = data.filter(d => d.mode === m);
+      return { m, scores: indicators.map(ind => rnd(avg(sub.map(d => d[ind.key])), 2)) };
+    });
+    const diffs = indicators.map((ind, i) => ({
+      label: ind.label,
+      diff: rnd((modesScores[0].scores[i] || 0) - (modesScores[1].scores[i] || 0), 2)
+    }));
+    const biggest = diffs.reduce((a, b) => Math.abs(a.diff) > Math.abs(b.diff) ? a : b);
+
+    setInterp('interp-radar', `
+      <b>Radar comparatif Hybride vs Synchrone-first (n=${n})</b><br>
+      ${diffs.map(d => `${d.label} : ${d.diff > 0 ? "H+" : "S+"}${Math.abs(d.diff)}`).join(" · ")}<br>
+      Dimension la plus différenciée : <b>${biggest.label}</b> (Δ = ${biggest.diff > 0 ? "+" : ""}${biggest.diff}).<br>
+      Le radar révèle le profil global de chaque mode — utile pour identifier
+      les forces relatives de chaque approche de coordination.
+    `);
+  }
+
+  // ── 2. Scores moyens par secteur ─────────────────────
+  destroyChart('chart-scores-sector');
+  {
+    const sectors = [...new Set(data.map(d => d.sector))].sort();
+    const indSub  = indicators.slice(0, 4); // AAI, WB, Perf, Inc
+    const colors  = ['#4f46e5', '#10b981', '#f59e0b', '#8b5cf6'];
+
+    const datasets = indSub.map((ind, i) => ({
+      label: ind.label,
+      data: sectors.map(s => {
+        const sub = data.filter(d => d.sector === s);
+        return sub.length ? rnd(avg(sub.map(d => d[ind.key])), 2) : 0;
+      }),
+      backgroundColor: colors[i] + 'bb',
+      borderColor: colors[i],
+      borderWidth: 1,
+      borderRadius: 3
+    }));
+
+    CHARTS['chart-scores-sector'] = new Chart(document.getElementById('chart-scores-sector'), {
+      type: 'bar',
+      data: {
+        labels: sectors.map(s => {
+          const ns = data.filter(d => d.sector === s).length;
+          return `${s} (n=${ns})`;
+        }),
+        datasets
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 8 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label} : ${ctx.raw}/5` } } },
+        scales: {
+          y: { suggestedMin: 1, suggestedMax: 5,
+               title: { display: true, text: 'Score moyen (1–5)' },
+               ticks: { stepSize: 0.5 } }
+        }
+      }
+    });
+
+    const sectorMeans = sectors.map(s => ({
+      s, aai: rnd(avg(data.filter(d => d.sector === s).map(d => d.aai)), 2)
+    })).sort((a, b) => b.aai - a.aai);
+
+    setInterp('interp-scores-sector', `
+      <b>Scores moyens par secteur (n=${n})</b><br>
+      Secteur avec AAI le plus élevé : <b>${sectorMeans[0].s}</b> (${sectorMeans[0].aai}/5)<br>
+      Secteur avec AAI le plus faible : <b>${sectorMeans[sectorMeans.length-1].s}</b>
+      (${sectorMeans[sectorMeans.length-1].aai}/5)<br>
+      Les secteurs Tech et Conseil tendent à afficher des scores AAI plus élevés,
+      cohérent avec leur culture de travail distribué et leurs outils numériques avancés.
+    `);
+  }
+
+  // ── 3. Scores par rôle ───────────────────────────────
+  destroyChart('chart-scores-role');
+  {
+    const roles   = [...new Set(data.map(d => d.role))].sort();
+    const indSub  = indicators.slice(0, 4);
+    const colors  = ['#4f46e5', '#10b981', '#f59e0b', '#8b5cf6'];
+
+    const datasets = indSub.map((ind, i) => ({
+      label: ind.label,
+      data: roles.map(r => {
+        const sub = data.filter(d => d.role === r);
+        return sub.length ? rnd(avg(sub.map(d => d[ind.key])), 2) : 0;
+      }),
+      backgroundColor: colors[i] + 'bb',
+      borderColor: colors[i],
+      borderWidth: 1,
+      borderRadius: 3
+    }));
+
+    CHARTS['chart-scores-role'] = new Chart(document.getElementById('chart-scores-role'), {
+      type: 'bar',
+      data: {
+        labels: roles.map(r => {
+          const nr = data.filter(d => d.role === r).length;
+          return `${r} (n=${nr})`;
+        }),
+        datasets
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label} : ${ctx.raw}/5` } } },
+        scales: {
+          y: { suggestedMin: 1, suggestedMax: 5,
+               title: { display: true, text: 'Score moyen (1–5)' },
+               ticks: { stepSize: 0.5 } }
+        }
+      }
+    });
+
+    const roleMeans = roles.map(r => ({
+      r, aai: rnd(avg(data.filter(d => d.role === r).map(d => d.aai)), 2),
+      n: data.filter(d => d.role === r).length
+    })).sort((a, b) => b.aai - a.aai);
+
+    setInterp('interp-scores-role', `
+      <b>Scores moyens par rôle (n=${n})</b><br>
+      AAI le plus élevé : <b>${roleMeans[0].r}</b> (${roleMeans[0].aai}/5, n=${roleMeans[0].n})<br>
+      AAI le plus faible : <b>${roleMeans[roleMeans.length-1].r}</b>
+      (${roleMeans[roleMeans.length-1].aai}/5, n=${roleMeans[roleMeans.length-1].n})<br>
+      Les rôles orientés produit et data tendent à adopter davantage de pratiques async
+      que les rôles ops/SRE plus contraints par la réactivité en temps réel.
+    `);
+  }
+
+  // Utilitaire scatter simple
+  function scatterSimple(canvasId, interpId, xKey, yKey, xLabel, yLabel, title) {
+    destroyChart(canvasId);
+    const xs = data.map(d => d[xKey]);
+    const ys = data.map(d => d[yKey]);
+    const r  = corr(xs, ys);
+    const p  = pValue(r, n);
+    const { slope, intercept } = linReg(xs, ys);
+    const xMin = Math.min(...xs), xMax = Math.max(...xs);
+
+    const modeList = [...new Set(data.map(d => d.mode))];
+    const datasets = modeList.map(m => ({
+      label: m,
+      data: data.filter(d => d.mode === m).map(d => ({ x: d[xKey], y: d[yKey] })),
+      backgroundColor: modeColorA(m, 0.7),
+      borderColor: modeColor(m),
+      borderWidth: 1,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      type: 'scatter'
+    }));
+    datasets.push({
+      label: 'Tendance',
+      data: [{ x: xMin, y: slope*xMin+intercept }, { x: xMax, y: slope*xMax+intercept }],
+      type: 'line',
+      borderColor: '#6b7280',
+      borderWidth: 2,
+      borderDash: [5, 4],
+      pointRadius: 0,
+      fill: false,
+      tension: 0
+    });
+
+    CHARTS[canvasId] = new Chart(document.getElementById(canvasId), {
+      type: 'scatter',
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10 } },
+          tooltip: { callbacks: { label: ctx =>
+            ctx.dataset.label === 'Tendance'
+              ? `r=${rnd(r,2)}${pStars(p)}, p=${rnd(p,3)}`
+              : ` ${ctx.dataset.label} — ${xLabel}: ${ctx.parsed.x}, ${yLabel}: ${ctx.parsed.y}`
+          }}
+        },
+        scales: {
+          x: { title: { display: true, text: xLabel } },
+          y: { title: { display: true, text: yLabel }, suggestedMin: 1, suggestedMax: 5 }
+        }
+      }
+    });
+
+    const sig = p < 0.05 ? "significative (p<0,05)" : p < 0.10 ? "marginale (p<0,10)" : "non significative";
+    setInterp(interpId, `
+      <b>${title} (n=${n})</b><br>
+      r = <b>${rnd(r,3)}${pStars(p)}</b> · p = ${rnd(p,3)} · pente = ${rnd(slope,4)}<br>
+      Corrélation <b>${r > 0 ? "positive" : "négative"}</b>, relation <b>${sig}</b>.<br>
+      ${Math.abs(r) >= 0.25
+        ? "Effet notable — ce facteur contextuel pourrait modérer la relation entre pratiques async et outcomes."
+        : "Effet faible — ce facteur contextuel semble peu lié au score dans cet échantillon."}
+    `);
+  }
+
+  // ── 4 & 5. Ancienneté vs Perf / WB ───────────────────
+  scatterSimple('chart-tenure-perf', 'interp-tenure-perf',
+    'tenure', 'perf', 'Ancienneté (mois)', 'Performance (1–5)', "Ancienneté × Performance");
+  scatterSimple('chart-tenure-wb', 'interp-tenure-wb',
+    'tenure', 'wb', 'Ancienneté (mois)', 'Bien-être (1–5)', "Ancienneté × Bien-être");
+
+  // ── 6. Taille équipe vs AAI ───────────────────────────
+  scatterSimple('chart-ts-aai', 'interp-ts-aai',
+    'team_size', 'aai', "Taille d'équipe (pers.)", 'AAI (1–5)', "Taille équipe × AAI");
+
+  // ── 7. Jours télétravail vs WB & Perf ────────────────
+  destroyChart('chart-remote-scores');
+  {
+    const rdKeys = [...new Set(data.map(d => Math.round(d.remote_days)))].sort((a,b)=>a-b);
+    const datasets = [
+      { key: 'wb',   label: 'Bien-être',   color: '#10b981' },
+      { key: 'perf', label: 'Performance', color: '#f59e0b' }
+    ].map(sc => ({
+      label: sc.label,
+      data: rdKeys.map(rd => {
+        const sub = data.filter(d => Math.round(d.remote_days) === rd);
+        return sub.length ? rnd(avg(sub.map(d => d[sc.key])), 2) : null;
+      }),
+      backgroundColor: sc.color + 'aa',
+      borderColor: sc.color,
+      borderWidth: 2,
+      borderRadius: 5
+    }));
+
+    const counts = rdKeys.map(rd => data.filter(d => Math.round(d.remote_days) === rd).length);
+
+    CHARTS['chart-remote-scores'] = new Chart(document.getElementById('chart-remote-scores'), {
+      type: 'bar',
+      data: {
+        labels: rdKeys.map((rd, i) => `${rd} j/sem\n(n=${counts[i]})`),
+        datasets
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label} : ${ctx.raw}/5` } } },
+        scales: {
+          y: { suggestedMin: 1, suggestedMax: 5,
+               title: { display: true, text: 'Score moyen (1–5)' },
+               ticks: { stepSize: 0.5 } }
+        }
+      }
+    });
+
+    const rWB   = corr(data.map(d=>d.remote_days), data.map(d=>d.wb));
+    const pWB   = pValue(rWB, n);
+    const rPerf = corr(data.map(d=>d.remote_days), data.map(d=>d.perf));
+    const pPerf = pValue(rPerf, n);
+
+    setInterp('interp-remote-scores', `
+      <b>Jours de télétravail vs Bien-être &amp; Performance (n=${n})</b><br>
+      Télétravail × Bien-être : r = <b>${rnd(rWB,2)}${pStars(pWB)}</b> (p=${rnd(pWB,3)})<br>
+      Télétravail × Performance : r = <b>${rnd(rPerf,2)}${pStars(pPerf)}</b> (p=${rnd(pPerf,3)})<br>
+      Le télétravail partiel peut favoriser la concentration et le bien-être
+      tout en maintenant la cohésion d'équipe — un modérateur clé de l'efficacité async.
+    `);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// BLOC 7 — SECTION H2 "PRATIQUES ASYNC & INCLUSION"
+// IDs : chart-aai-inc, chart-inc-mode, chart-inc-tz,
+//        chart-inc-sector, chart-inc-role
+// ═══════════════════════════════════════════════════════
+
+function renderH2() {
+  const data = filteredData();
+  const n = data.length;
+  if (n === 0) return;
+
+  // ── 1. Scatter AAI × Inclusion ────────────────────────
+  destroyChart('chart-aai-inc');
+  {
+    const xs = data.map(d => d.aai);
+    const ys = data.map(d => d.inc);
+    const r  = corr(xs, ys);
+    const p  = pValue(r, n);
+    const { slope, intercept } = linReg(xs, ys);
+    const xMin = Math.min(...xs), xMax = Math.max(...xs);
+
+    const modeList = [...new Set(data.map(d => d.mode))];
+    const datasets = modeList.map(m => ({
+      label: m,
+      data: data.filter(d => d.mode === m).map(d => ({ x: d.aai, y: d.inc })),
+      backgroundColor: modeColorA(m, 0.7),
+      borderColor: modeColor(m),
+      borderWidth: 1,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      type: 'scatter'
+    }));
+    datasets.push({
+      label: "Tendance globale",
+      data: [{ x: xMin, y: slope*xMin+intercept }, { x: xMax, y: slope*xMax+intercept }],
+      type: 'line',
+      borderColor: '#6b7280',
+      borderWidth: 2,
+      borderDash: [5, 4],
+      pointRadius: 0,
+      fill: false,
+      tension: 0
+    });
+
+    CHARTS['chart-aai-inc'] = new Chart(document.getElementById('chart-aai-inc'), {
+      type: 'scatter',
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10 } },
+          tooltip: { callbacks: { label: ctx =>
+            ctx.dataset.label === 'Tendance globale'
+              ? `r=${rnd(r,2)}${pStars(p)}, p=${rnd(p,3)}`
+              : ` ${ctx.dataset.label} — AAI: ${ctx.parsed.x}, Inc: ${ctx.parsed.y}`
+          }}
+        },
+        scales: {
+          x: { title: { display: true, text: 'Score AAI (1–5)' }, suggestedMin: 1, suggestedMax: 5 },
+          y: { title: { display: true, text: 'Score Inclusion (1–5)' }, suggestedMin: 1, suggestedMax: 5 }
+        }
+      }
+    });
+
+    const sig = p < 0.05 ? "significative (p<0,05)" : p < 0.10 ? "marginale (p<0,10)" : "non significative";
+    setInterp('interp-aai-inc', `
+      <b>AAI × Inclusion (n=${n}) — Hypothèse H2</b><br>
+      r = <b>${rnd(r,3)}${pStars(p)}</b> · p = ${rnd(p,3)} · pente = ${rnd(slope,3)}<br>
+      Corrélation <b>${r>0?"positive":"négative"}</b>, relation <b>${sig}</b>.<br>
+      ${p < 0.05
+        ? "Les pratiques asynchrones plus développées sont associées à un sentiment d'inclusion plus fort — résultat cohérent avec H2 : l'async favorise la participation équitable."
+        : "La relation n'atteint pas le seuil de significativité avec n=" + n + " — H2 ne peut être confirmée sur la seule base de cette corrélation."}
+    `);
+  }
+
+  // Utilitaire : barres horizontales d'un score moyen par catégorie
+  function barByCategory(canvasId, interpId, groupKey, scoreKey, title, color) {
+    destroyChart(canvasId);
+    const groupMap = {};
+    data.forEach(d => {
+      const g = d[groupKey];
+      if (!groupMap[g]) groupMap[g] = [];
+      groupMap[g].push(d[scoreKey]);
+    });
+    const sorted = Object.entries(groupMap)
+      .map(([g, vals]) => ({ g, mean: rnd(avg(vals), 2), n: vals.length }))
+      .sort((a, b) => b.mean - a.mean);
+
+    CHARTS[canvasId] = new Chart(document.getElementById(canvasId), {
+      type: 'bar',
+      data: {
+        labels: sorted.map(e => `${e.g} (n=${e.n})`),
+        datasets: [{
+          label: `Score ${scoreKey.toUpperCase()} moyen`,
+          data: sorted.map(e => e.mean),
+          backgroundColor: sorted.map(e => modeColorA(
+            e.g === 'Hybride' ? 'Hybride' : e.g === 'Synchrone-first' ? 'Synchrone-first' : 'Asynchrone-first',
+            0.7
+          )),
+          borderColor: color,
+          borderWidth: 1,
+          borderRadius: 5
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.raw}/5` } }
+        },
+        scales: {
+          x: { suggestedMin: 1, suggestedMax: 5,
+               title: { display: true, text: "Score d'inclusion moyen (1–5)" },
+               ticks: { stepSize: 0.5 } }
+        }
+      }
+    });
+
+    const best = sorted[0], worst = sorted[sorted.length - 1];
+    setInterp(interpId, `
+      <b>${title} (n=${n})</b><br>
+      Score le plus élevé : <b>${best.g}</b> (${best.mean}/5, n=${best.n})<br>
+      Score le plus faible : <b>${worst.g}</b> (${worst.mean}/5, n=${worst.n})<br>
+      Écart max : Δ = ${rnd(best.mean - worst.mean, 2)} points.<br>
+      Ces variations contextuelles éclairent les conditions dans lesquelles
+      les pratiques async favorisent (ou non) l'inclusion perçue.
+    `);
+  }
+
+  // ── 2. Inclusion par mode ─────────────────────────────
+  {
+    destroyChart('chart-inc-mode');
+    const modes = ['Hybride','Synchrone-first'];
+    const byMode = modes.map(m => ({
+      g: m,
+      mean: rnd(avg(data.filter(d=>d.mode===m).map(d=>d.inc)), 2),
+      n: data.filter(d=>d.mode===m).length
+    })).sort((a,b)=>b.mean-a.mean);
+
+    CHARTS['chart-inc-mode'] = new Chart(document.getElementById('chart-inc-mode'), {
+      type: 'bar',
+      data: {
+        labels: byMode.map(e => `${e.g}\n(n=${e.n})`),
+        datasets: [{
+          data: byMode.map(e => e.mean),
+          backgroundColor: byMode.map(e => modeColorA(e.g, 0.75)),
+          borderColor: byMode.map(e => modeColor(e.g)),
+          borderWidth: 2,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.raw}/5` } } },
+        scales: {
+          y: { suggestedMin: 1, suggestedMax: 5,
+               title: { display: true, text: "Score inclusion moyen (1–5)" },
+               ticks: { stepSize: 0.5 } }
+        }
+      }
+    });
+
+    const diff = rnd(byMode[0].mean - byMode[1].mean, 2);
+    const r2 = corr(data.map(d=>d.mode==='Hybride'?1:0), data.map(d=>d.inc));
+    const p2 = pValue(r2, n);
+    setInterp('interp-inc-mode', `
+      <b>Inclusion par mode de fonctionnement (n=${n})</b><br>
+      Hybride : <b>${byMode.find(e=>e.g==='Hybride')?.mean ?? '—'}/5</b> ·
+      Synchrone-first : <b>${byMode.find(e=>e.g==='Synchrone-first')?.mean ?? '—'}/5</b><br>
+      Écart : Δ = ${diff > 0 ? '+' : ''}${diff} · r biserial = ${rnd(r2,2)}${pStars(p2)} (p=${rnd(p2,3)})<br>
+      ${Math.abs(diff) >= 0.2
+        ? "La différence entre modes est notable — elle soutient l'idée que le mode de coordination influence le sentiment d'inclusion."
+        : "La différence entre modes est faible — le mode seul ne suffit pas à expliquer les variations d'inclusion."}
+    `);
+  }
+
+  // ── 3. Inclusion par fuseau horaire ───────────────────
+  {
+    destroyChart('chart-inc-tz');
+    const tzMap = {};
+    data.forEach(d => { if (!tzMap[d.timezone]) tzMap[d.timezone]=[]; tzMap[d.timezone].push(d.inc); });
+    const sorted = Object.entries(tzMap)
+      .map(([g, vals]) => ({ g, mean: rnd(avg(vals), 2), n: vals.length }))
+      .sort((a,b) => b.mean - a.mean);
+
+    CHARTS['chart-inc-tz'] = new Chart(document.getElementById('chart-inc-tz'), {
+      type: 'bar',
+      data: {
+        labels: sorted.map(e => `${e.g} (n=${e.n})`),
+        datasets: [{
+          data: sorted.map(e => e.mean),
+          backgroundColor: ['rgba(79,70,229,0.7)','rgba(124,111,222,0.7)','rgba(168,155,224,0.7)'],
+          borderColor: '#4f46e5', borderWidth: 1, borderRadius: 5
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.raw}/5` } } },
+        scales: {
+          y: { suggestedMin: 1, suggestedMax: 5,
+               title: { display: true, text: "Score inclusion moyen (1–5)" },
+               ticks: { stepSize: 0.5 } }
+        }
+      }
+    });
+
+    const best = sorted[0], worst = sorted[sorted.length-1];
+    setInterp('interp-inc-tz', `
+      <b>Inclusion par fuseau horaire (n=${n})</b><br>
+      Score le plus élevé : <b>${best.g}</b> → ${best.mean}/5 (n=${best.n})<br>
+      Score le plus faible : <b>${worst.g}</b> → ${worst.mean}/5 (n=${worst.n})<br>
+      Δ = ${rnd(best.mean-worst.mean,2)} points.<br>
+      Les équipes multi-fuseaux peuvent ressentir plus fortement l'exclusion dans les réunions
+      synchrones, rendant les pratiques async potentiellement plus équitables pour elles.
+    `);
+  }
+
+  // ── 4. Inclusion par secteur ──────────────────────────
+  {
+    destroyChart('chart-inc-sector');
+    const sMap = {};
+    data.forEach(d => { if (!sMap[d.sector]) sMap[d.sector]=[]; sMap[d.sector].push(d.inc); });
+    const sorted = Object.entries(sMap)
+      .map(([g, vals]) => ({ g, mean: rnd(avg(vals),2), n: vals.length }))
+      .sort((a,b) => b.mean - a.mean);
+    const palette = ['rgba(79,70,229,0.7)','rgba(124,111,222,0.7)','rgba(168,155,224,0.7)',
+                     'rgba(197,191,232,0.7)','rgba(221,217,245,0.7)','rgba(238,234,255,0.7)'];
+
+    CHARTS['chart-inc-sector'] = new Chart(document.getElementById('chart-inc-sector'), {
+      type: 'bar',
+      data: {
+        labels: sorted.map(e => `${e.g} (n=${e.n})`),
+        datasets: [{
+          data: sorted.map(e => e.mean),
+          backgroundColor: sorted.map((_,i) => palette[Math.min(i, palette.length-1)]),
+          borderColor: '#4f46e5', borderWidth: 1, borderRadius: 5
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.raw}/5` } } },
+        scales: {
+          x: { suggestedMin: 1, suggestedMax: 5,
+               title: { display: true, text: "Score inclusion moyen (1–5)" },
+               ticks: { stepSize: 0.5 } }
+        }
+      }
+    });
+
+    const best = sorted[0], worst = sorted[sorted.length-1];
+    setInterp('interp-inc-sector', `
+      <b>Inclusion par secteur (n=${n})</b><br>
+      Secteur le plus inclusif : <b>${best.g}</b> → ${best.mean}/5 (n=${best.n})<br>
+      Secteur le moins inclusif : <b>${worst.g}</b> → ${worst.mean}/5 (n=${worst.n})<br>
+      Δ = ${rnd(best.mean-worst.mean,2)} points.<br>
+      Les variations sectorielles reflètent des cultures organisationnelles différentes
+      concernant la participation, la prise de parole et les pratiques de collaboration.
+    `);
+  }
+
+  // ── 5. Inclusion par rôle ─────────────────────────────
+  {
+    destroyChart('chart-inc-role');
+    const rMap = {};
+    data.forEach(d => { if (!rMap[d.role]) rMap[d.role]=[]; rMap[d.role].push(d.inc); });
+    const sorted = Object.entries(rMap)
+      .map(([g, vals]) => ({ g, mean: rnd(avg(vals),2), n: vals.length }))
+      .sort((a,b) => b.mean - a.mean);
+    const palette = ['rgba(79,70,229,0.7)','rgba(124,111,222,0.7)','rgba(168,155,224,0.7)',
+                     'rgba(197,191,232,0.7)','rgba(221,217,245,0.7)','rgba(238,234,255,0.7)'];
+
+    CHARTS['chart-inc-role'] = new Chart(document.getElementById('chart-inc-role'), {
+      type: 'bar',
+      data: {
+        labels: sorted.map(e => `${e.g} (n=${e.n})`),
+        datasets: [{
+          data: sorted.map(e => e.mean),
+          backgroundColor: sorted.map((_,i) => palette[Math.min(i, palette.length-1)]),
+          borderColor: '#4f46e5', borderWidth: 1, borderRadius: 5
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.raw}/5` } } },
+        scales: {
+          x: { suggestedMin: 1, suggestedMax: 5,
+               title: { display: true, text: "Score inclusion moyen (1–5)" },
+               ticks: { stepSize: 0.5 } }
+        }
+      }
+    });
+
+    const best = sorted[0], worst = sorted[sorted.length-1];
+    setInterp('interp-inc-role', `
+      <b>Inclusion par rôle principal (n=${n})</b><br>
+      Rôle le plus inclusif : <b>${best.g}</b> → ${best.mean}/5 (n=${best.n})<br>
+      Rôle le moins inclusif : <b>${worst.g}</b> → ${worst.mean}/5 (n=${worst.n})<br>
+      Δ = ${rnd(best.mean-worst.mean,2)} points.<br>
+      Certains rôles (ex. Dev, Ops) peuvent se sentir davantage exclus des décisions
+      prises lors de réunions synchrones auxquelles ils participent moins.
+    `);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// BLOC 6 — SECTION H1 "ASYNC, BIEN-ÊTRE & PERFORMANCE"
+// IDs : chart-aai-wb, chart-aai-perf, chart-aai-cc,
+//        chart-mh-wb, chart-mh-perf, chart-mp-wb,
+//        chart-mp-perf, chart-global-bars
+// ═══════════════════════════════════════════════════════
+
+function renderH1() {
+  const data = filteredData();
+  const n = data.length;
+  if (n === 0) return;
+
+  // Utilitaire scatter + régression (réutilisé 7 fois)
+  function scatterReg(canvasId, interpId, xKey, yKey, xLabel, yLabel, title) {
+    destroyChart(canvasId);
+    const xs = data.map(d => d[xKey]);
+    const ys = data.map(d => d[yKey]);
+    const r  = corr(xs, ys);
+    const p  = pValue(r, n);
+    const { slope, intercept } = linReg(xs, ys);
+    const xMin = Math.min(...xs), xMax = Math.max(...xs);
+
+    const modeList = [...new Set(data.map(d => d.mode))];
+    const datasets = modeList.map(m => ({
+      label: m,
+      data: data.filter(d => d.mode === m).map(d => ({ x: d[xKey], y: d[yKey] })),
+      backgroundColor: modeColorA(m, 0.7),
+      borderColor: modeColor(m),
+      borderWidth: 1,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      type: 'scatter'
+    }));
+    datasets.push({
+      label: 'Tendance globale',
+      data: [{ x: xMin, y: slope*xMin+intercept }, { x: xMax, y: slope*xMax+intercept }],
+      type: 'line',
+      borderColor: '#6b7280',
+      borderWidth: 2,
+      borderDash: [5, 4],
+      pointRadius: 0,
+      fill: false,
+      tension: 0
+    });
+
+    CHARTS[canvasId] = new Chart(document.getElementById(canvasId), {
+      type: 'scatter',
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10 } },
+          tooltip: { callbacks: { label: ctx =>
+            ctx.dataset.label === 'Tendance globale'
+              ? `r=${rnd(r,2)}${pStars(p)}, p=${rnd(p,3)}`
+              : ` ${ctx.dataset.label} — ${xLabel}: ${ctx.parsed.x}, ${yLabel}: ${ctx.parsed.y}`
+          }}
+        },
+        scales: {
+          x: { title: { display: true, text: xLabel } },
+          y: { title: { display: true, text: yLabel }, min: 1, max: 5 }
+        }
+      }
+    });
+
+    const sig = p < 0.05 ? "significative (p<0,05)" : p < 0.10 ? "marginale (p<0,10)" : "non significative (p≥0,10)";
+    const dir = r > 0 ? "positive" : "négative";
+    setInterp(interpId, `
+      <b>${title} (n=${n})</b><br>
+      r de Pearson = <b>${rnd(r,3)}${pStars(p)}</b> · p = ${rnd(p,3)} · pente = ${rnd(slope,3)}<br>
+      Corrélation <b>${dir}</b>, relation <b>${sig}</b>.<br>
+      ${Math.abs(r) >= 0.3
+        ? `Effet modéré à fort : l'association entre ${xLabel} et ${yLabel} mérite attention dans le cadre de l'hypothèse H1.`
+        : `Effet faible : avec n=${n}, les intervalles de confiance sont larges — interpréter avec prudence.`}
+    `);
+  }
+
+  // ── Scatters ──────────────────────────────────────────
+  scatterReg('chart-aai-wb',   'interp-aai-wb',   'aai','wb',   'AAI','Bien-être',  'AAI × Bien-être');
+  scatterReg('chart-aai-perf', 'interp-aai-perf', 'aai','perf', 'AAI','Performance','AAI × Performance');
+  scatterReg('chart-aai-cc',   'interp-aai-cc',   'aai','cc',   'AAI','CC',         'AAI × Clarté & Collaboration');
+  scatterReg('chart-mh-wb',    'interp-mh-wb',    'meeting_hours','wb',   'Heures réunion','Bien-être',  'Heures réunion × Bien-être');
+  scatterReg('chart-mh-perf',  'interp-mh-perf',  'meeting_hours','perf', 'Heures réunion','Performance','Heures réunion × Performance');
+  scatterReg('chart-mp-wb',    'interp-mp-wb',    'meeting_pct','wb',   '% Réunions','Bien-être',  '% Réunions × Bien-être');
+  scatterReg('chart-mp-perf',  'interp-mp-perf',  'meeting_pct','perf', '% Réunions','Performance','% Réunions × Performance');
+
+  // ── Barres groupées — scores moyens par mode ──────────
+  destroyChart('chart-global-bars');
+  {
+    const indicators = [
+      { key:'aai',  label:'AAI' },
+      { key:'wb',   label:'Bien-être' },
+      { key:'perf', label:'Performance' },
+      { key:'inc',  label:'Inclusion' },
+      { key:'cc',   label:'CC' },
+    ];
+    const modes = ['Hybride','Synchrone-first'];
+    const datasets = modes.map(m => {
+      const sub = data.filter(d => d.mode === m);
+      return {
+        label: `${m} (n=${sub.length})`,
+        data: indicators.map(ind => sub.length ? rnd(avg(sub.map(d => d[ind.key])), 2) : 0),
+        backgroundColor: modeColorA(m, 0.75),
+        borderColor: modeColor(m),
+        borderWidth: 2,
+        borderRadius: 5
+      };
+    });
+
+    CHARTS['chart-global-bars'] = new Chart(document.getElementById('chart-global-bars'), {
+      type: 'bar',
+      data: { labels: indicators.map(i => i.label), datasets },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label} : ${ctx.raw}/5` } } },
+        scales: {
+          y: { suggestedMin: 1, suggestedMax: 5,
+               title: { display: true, text: 'Score moyen (1–5)' },
+               ticks: { stepSize: 0.5 } }
+        }
+      }
+    });
+
+    const modesData = modes.map(m => ({ m, sub: data.filter(d => d.mode === m) }));
+    const diffs = indicators.map(ind => {
+      const vals = modesData.map(md => avg(md.sub.map(d => d[ind.key])));
+      return { label: ind.label, diff: rnd(vals[0] - vals[1], 2) };
+    });
+    const biggest = diffs.reduce((a,b) => Math.abs(a.diff)>Math.abs(b.diff)?a:b);
+
+    setInterp('interp-global-bars', `
+      <b>Scores moyens par indicateur et par mode (n=${n})</b><br>
+      ${diffs.map(d => `${d.label} : Hybride ${d.diff>0?'+':''}${d.diff} vs Sync-first`).join(' · ')}<br>
+      Écart le plus marqué : <b>${biggest.label}</b> (Δ = ${biggest.diff > 0 ? '+' : ''}${biggest.diff}).<br>
+      Ces différences de moyennes sont descriptives — un test t serait nécessaire pour conclure
+      à une différence statistiquement significative avec n=${n}.
+    `);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// BLOC 5 — SECTION "DISTRIBUTIONS DES SCORES"
+// IDs : chart-dist-aai, chart-dist-wb, chart-dist-perf,
+//        chart-dist-inc, chart-dist-cc
+// ═══════════════════════════════════════════════════════
+
+function renderDistributions() {
+  const data = filteredData();
+  const n = data.length;
+  if (n === 0) return;
+
+  const SCORES = [
+    { key:'aai',  id:'chart-dist-aai',  interp:'interp-dist-aai',  label:'AAI',          color:'#4f46e5', desc:"Agilité Asynchrone Individuelle" },
+    { key:'wb',   id:'chart-dist-wb',   interp:'interp-dist-wb',   label:'Bien-être',     color:'#10b981', desc:"Bien-être au travail" },
+    { key:'perf', id:'chart-dist-perf', interp:'interp-dist-perf', label:'Performance',   color:'#f59e0b', desc:"Performance perçue" },
+    { key:'inc',  id:'chart-dist-inc',  interp:'interp-dist-inc',  label:'Inclusion',     color:'#8b5cf6', desc:"Inclusion & équité" },
+    { key:'cc',   id:'chart-dist-cc',   interp:'interp-dist-cc',   label:'CC',            color:'#ef4444', desc:"Clarté & Collaboration" },
+  ];
+
+  SCORES.forEach(sc => {
+    destroyChart(sc.id);
+    const vals = data.map(d => d[sc.key]);
+    const { labels, counts } = histogram(vals, 8);
+    const mn   = rnd(avg(vals), 2);
+    const sd   = rnd(std(vals), 2);
+    const sorted = [...vals].sort((a,b) => a-b);
+    const med  = sorted[Math.floor(sorted.length/2)];
+    const minV = rnd(Math.min(...vals), 2);
+    const maxV = rnd(Math.max(...vals), 2);
+
+    // Datasets par mode (empilés en transparence)
+    const modes = ['Hybride','Synchrone-first'];
+    const modeDatasets = modes.map(m => {
+      const sub = data.filter(d => d.mode === m);
+      const { counts: mc } = histogram(sub.map(d => d[sc.key]), 8);
+      return {
+        label: m,
+        data: mc,
+        backgroundColor: modeColorA(m, 0.45),
+        borderColor: modeColor(m),
+        borderWidth: 1,
+        borderRadius: 3,
+        stack: 'modes'
+      };
+    });
+
+    CHARTS[sc.id] = new Chart(document.getElementById(sc.id), {
+      type: 'bar',
+      data: { labels, datasets: modeDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label} : ${ctx.raw}` } }
+        },
+        scales: {
+          x: { stacked: true, title: { display: true, text: `Score ${sc.label} (1–5)` } },
+          y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 },
+               title: { display: true, text: 'Effectif' } }
+        }
+      }
+    });
+
+    // Skewness simple (moment 3 / sd^3)
+    const skew = rnd(avg(vals.map(v => ((v-mn)/sd)**3)), 2);
+    const skewLabel = Math.abs(skew) < 0.3 ? 'symétrique'
+                    : skew > 0 ? 'asymétrie positive (queue droite)' : 'asymétrie négative (queue gauche)';
+
+    // Part haute (≥3.5) et basse (≤2.5)
+    const pctHaut = rnd(vals.filter(v=>v>=3.5).length/n*100, 1);
+    const pctBas  = rnd(vals.filter(v=>v<=2.5).length/n*100, 1);
+
+    setInterp(sc.interp, `
+      <b>Distribution ${sc.desc} — ${sc.label} (n=${n})</b><br>
+      Moy : <b>${mn}/5</b> · Méd : <b>${med}/5</b> · σ = ${sd} · Min ${minV} · Max ${maxV}<br>
+      Distribution : <b>${skewLabel}</b> (skew = ${skew}).<br>
+      ${pctHaut}% des répondants obtiennent ≥ 3,5/5 · ${pctBas}% obtiennent ≤ 2,5/5.<br>
+      Les barres colorées montrent la contribution de chaque mode à la distribution globale.
+    `);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 0 — SYNTHÈSE & HYPOTHÈSES
+// ═══════════════════════════════════════════════════════
+function renderSynthese() {
+  const data = filteredData();
+  const n = data.length;
+
+  const badge = document.getElementById('badge-synthese');
+  if (badge) badge.textContent = `n=${n}`;
+
+  // ── KPI grid dynamique ──────────────────────────────
+  const kpiEl = document.getElementById('kpi-synthese');
+  if (kpiEl && n > 0) {
+    const nH = data.filter(d => d.mode === 'Hybride').length;
+    const nS = data.filter(d => d.mode === 'Synchrone-first').length;
+    const nA = data.filter(d => d.mode === 'Asynchrone-first').length;
+    kpiEl.innerHTML = [
+      { label: 'Répondants',  val: n },
+      { label: 'Hybride',     val: nH + ' (' + rnd(nH/n*100,0) + '%)' },
+      { label: 'Sync-first',  val: nS + ' (' + rnd(nS/n*100,0) + '%)' },
+      { label: 'Async-first', val: nA === 0 ? '0 —' : nA },
+      { label: 'AAI moyen',   val: rnd(avg(data.map(d => d.aai)), 2) + ' /5' },
+    ].map(k => `
+      <div class="kpi-card">
+        <div class="kpi-val">${k.val}</div>
+        <div class="kpi-lbl">${k.label}</div>
+      </div>`).join('');
+  }
+
+  if (n === 0) return;
+
+  // ── Corrélations clés ───────────────────────────────
+  const aaiVals  = data.map(d => d.aai);
+  const wbVals   = data.map(d => d.wb);
+  const perfVals = data.map(d => d.perf);
+  const incVals  = data.map(d => d.inc);
+  const mpVals   = data.map(d => d.meeting_pct);
+
+  const pairs = [
+    { label: '% Réunions × Bien-être',    r: corr(mpVals,  wbVals),   xs: mpVals,  ys: wbVals  },
+    { label: 'AAI × Bien-être',           r: corr(aaiVals, wbVals),   xs: aaiVals, ys: wbVals  },
+    { label: 'AAI × Performance',         r: corr(aaiVals, perfVals), xs: aaiVals, ys: perfVals },
+    { label: 'AAI × Inclusion',           r: corr(aaiVals, incVals),  xs: aaiVals, ys: incVals  },
+    { label: 'Bien-être × Performance',   r: corr(wbVals,  perfVals), xs: wbVals,  ys: perfVals },
+  ].map(p => ({ ...p, p: pValue(p.r, n) }));
+
+  // ── Mise à jour des stats des cartes verdict ────────
+  const mpWb = pairs[0];
+  const aaiInc = pairs[3];
+
+  const h1StatEl  = document.getElementById('syn-h1-stat');
+  const h2StatEl  = document.getElementById('syn-h2-stat');
+  const h3StatEl  = document.getElementById('syn-h3-stat');
+
+  if (h1StatEl) h1StatEl.textContent = `r = ${rnd(mpWb.r, 2)}${pStars(mpWb.p)}  (% Réun. × WB)`;
+  if (h2StatEl) h2StatEl.textContent = `r = ${rnd(aaiInc.r, 2)}${pStars(aaiInc.p)}  (AAI × Inc.)`;
+  if (h3StatEl) {
+    const nH3 = data.filter(d => d.mode === 'Hybride').length;
+    const nS3 = data.filter(d => d.mode === 'Synchrone-first').length;
+    const nA3 = data.filter(d => d.mode === 'Asynchrone-first').length;
+    h3StatEl.textContent = nA3 === 0
+      ? `Hybride n=${nH3} · Sync n=${nS3} · 0 async`
+      : `${nH3} Hybride · ${nS3} Sync · ${nA3} Async`;
+  }
+
+  // Mettre à jour desc H1 dynamiquement si la relation change de signe
+  const h1DescEl = document.getElementById('syn-h1-desc');
+  if (h1DescEl && mpWb.r !== null) {
+    const sig = mpWb.p < 0.001 ? "très significative (p<0,001)"
+              : mpWb.p < 0.05  ? "significative (p<0,05)"
+              : "non significative";
+    h1DescEl.textContent = mpWb.r < 0
+      ? `Plus la charge de réunions est élevée, plus le bien-être diminue. Association ${sig}.`
+      : `Dans ce sous-ensemble filtré, la relation % réunions × bien-être est ${sig}.`;
+  }
+
+  // ── Tableau des corrélations clés ───────────────────
+  const tEl = document.getElementById('syn-corr-table');
+  if (tEl) {
+    function corrBadge(r3, p3) {
+      const stars = pStars(p3);
+      const col = r3 > 0 ? '#059669' : '#dc2626';
+      const bg  = r3 > 0 ? '#d1fae5' : '#fee2e2';
+      const sig = p3 < 0.05 ? `style="font-weight:700;color:${col}"` : `style="color:#64748b"`;
+      return `<span style="display:inline-block;padding:2px 7px;border-radius:12px;background:${bg};font-weight:700;color:${col};font-size:11px">
+                r = ${rnd(r3, 2)}${stars}
+              </span>`;
+    }
+    function interpLabel(p3) {
+      if (p3 < 0.001) return '<span style="color:#059669;font-weight:600">***</span>';
+      if (p3 < 0.01)  return '<span style="color:#10b981;font-weight:600">**</span>';
+      if (p3 < 0.05)  return '<span style="color:#6ee7b7;font-weight:600">*</span>';
+      if (p3 < 0.10)  return '<span style="color:#f59e0b;font-weight:600">†</span>';
+      return '<span style="color:#94a3b8">ns</span>';
+    }
+
+    let html = `<table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#f1f5f9">
+        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e2e8f0">Paire</th>
+        <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e2e8f0">r</th>
+        <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e2e8f0">p-value</th>
+        <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e2e8f0">Sig.</th>
+        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e2e8f0">Interprétation</th>
+      </tr></thead><tbody>`;
+
+    const interpTexts = [
+      "Mécanisme H1 — corrélation négative forte",
+      "H1 — lien positif, non significatif",
+      "H1 — lien positif, non significatif",
+      "H2 — lien positif faible, non significatif",
+      "Cohérence interne — lien positif",
+    ];
+
+    pairs.forEach((p3, i) => {
+      const str = Math.abs(p3.r) < 0.1 ? "quasi nulle"
+                : Math.abs(p3.r) < 0.3 ? "faible"
+                : Math.abs(p3.r) < 0.5 ? "modérée"
+                : "forte";
+      html += `<tr style="border-bottom:1px solid #f1f5f9">
+        <td style="padding:7px 12px;font-weight:500">${p3.label}</td>
+        <td style="padding:7px 12px;text-align:center">${corrBadge(p3.r, p3.p)}</td>
+        <td style="padding:7px 12px;text-align:center;color:#475569">${rnd(p3.p, 3)}</td>
+        <td style="padding:7px 12px;text-align:center">${interpLabel(p3.p)}</td>
+        <td style="padding:7px 12px;color:#64748b">${interpTexts[i]} (${str})</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table>
+      <p style="font-size:10px;color:#94a3b8;margin-top:6px">
+        *** p&lt;0,001 · ** p&lt;0,01 · * p&lt;0,05 · † p&lt;0,10 · ns non significatif
+      </p>`;
+    tEl.innerHTML = annotateHTML(html);
+  }
+
+  // Mettre à jour le n dans l'alerte
+  const nLimitEl = document.getElementById('syn-n-limit');
+  if (nLimitEl) nLimitEl.textContent = n;
+}
+
+function renderProfil() {
+  const data = filteredData();
+  const n = data.length;
+
+  const badge = document.getElementById('badge-profil');
+  if (badge) badge.textContent = 'n=' + n;
+
+  // ── KPI grid ──────────────────────────────────────────
+  const kpiGrid = document.getElementById('kpi-grid');
+  if (kpiGrid) {
+    if (n === 0) {
+      kpiGrid.innerHTML = '<p style="color:#999;padding:12px">Aucun répondant ne correspond aux filtres.</p>';
+      return;
+    }
+    const nH = data.filter(d=>d.mode==='Hybride').length;
+    const nS = data.filter(d=>d.mode==='Synchrone-first').length;
+    const tenures = [...data.map(d=>d.tenure)].sort((a,b)=>a-b);
+    const med = arr => arr[Math.floor(arr.length/2)];
+    const meanMP = rnd(avg(data.map(d=>d.meeting_pct)), 0);
+    kpiGrid.innerHTML = `
+      <div class="kpi-card"><div class="kpi-val">${n}</div><div class="kpi-lbl">Répondants</div></div>
+      <div class="kpi-card"><div class="kpi-val" style="color:var(--hybrid)">${nH}</div><div class="kpi-lbl">Hybrides</div></div>
+      <div class="kpi-card"><div class="kpi-val" style="color:var(--sync)">${nS}</div><div class="kpi-lbl">Synchrone-first</div></div>
+      <div class="kpi-card"><div class="kpi-val">${med(tenures)}&thinsp;<small>mois</small></div><div class="kpi-lbl">Ancienneté médiane</div></div>
+      <div class="kpi-card"><div class="kpi-val">${meanMP}%</div><div class="kpi-lbl">Moy. % temps réunions</div></div>
+    `;
+  }
+  if (n === 0) return;
+
+  // ── 1. Donut — Mode de fonctionnement ─────────────────
+  destroyChart('chart-modes');
+  {
+    const modes = ['Hybride','Synchrone-first','Asynchrone-first'];
+    const counts = modes.map(m=>data.filter(d=>d.mode===m).length);
+    CHARTS['chart-modes'] = new Chart(document.getElementById('chart-modes'), {
+      type: 'doughnut',
+      data: {
+        labels: modes.map((m,i)=>`${m} (n=${counts[i]})`),
+        datasets: [{ data:counts, backgroundColor:modes.map(modeColor), borderWidth:2, borderColor:'#fff' }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:true,
+        plugins: {
+          legend: { position:'bottom', labels:{font:{size:12},padding:16} },
+          tooltip: { callbacks:{ label:ctx=>`${ctx.label} : ${rnd(ctx.parsed/n*100,1)}%` } }
+        }
+      }
+    });
+    const pctH = rnd(data.filter(d=>d.mode==='Hybride').length/n*100,1);
+    const pctS = rnd(data.filter(d=>d.mode==='Synchrone-first').length/n*100,1);
+    const nA   = data.filter(d=>d.mode==='Asynchrone-first').length;
+    setInterp('interp-modes', `
+      <b>Mode de fonctionnement (n=${n})</b><br>
+      L'échantillon est dominé par le mode <b>Hybride (${pctH}%)</b>
+      et <b>Synchrone-first (${pctS}%)</b>.
+      ${nA===0?'Aucun répondant ne se déclare Asynchrone-first — les comparaisons inter-modes portent exclusivement sur ces deux profils.':''}
+      Cette répartition reflète les réalités organisationnelles françaises en 2026.
+    `);
+  }
+
+  // ── 2. Bar — Fuseaux horaires ──────────────────────────
+  destroyChart('chart-tz');
+  {
+    const tzMap = {};
+    data.forEach(d=>{ tzMap[d.timezone]=(tzMap[d.timezone]||0)+1; });
+    const labels = Object.keys(tzMap).sort();
+    const counts = labels.map(l=>tzMap[l]);
+    const palette = ['#4f46e5','#7c6fde','#a89be0','#c5bfe8','#ddd9f5'];
+    CHARTS['chart-tz'] = new Chart(document.getElementById('chart-tz'), {
+      type:'bar',
+      data:{ labels, datasets:[{ data:counts, backgroundColor:palette.slice(0,labels.length), borderRadius:6 }] },
+      options:{
+        responsive:true, maintainAspectRatio:true,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>` ${ctx.raw} répondants (${rnd(ctx.raw/n*100,1)}%)` } } },
+        scales:{ y:{ beginAtZero:true, ticks:{stepSize:1}, title:{display:true,text:'Effectif'} } }
+      }
+    });
+    const mixTZ = data.filter(d=>d.timezone!=='Même fuseau').length;
+    setInterp('interp-tz', `
+      <b>Dispersion des fuseaux horaires (n=${n})</b><br>
+      <b>${rnd(mixTZ/n*100,1)}%</b> des répondants (n=${mixTZ}) évoluent avec un décalage horaire (±3h ou &gt;3h).
+      Ces contextes multi-fuseaux rendent la coordination synchrone plus coûteuse et renforcent
+      la valeur des pratiques async (documentation, threads, handovers écrits).
+    `);
+  }
+
+  // ── 3. Bar — Jours de télétravail ─────────────────────
+  destroyChart('chart-remote');
+  {
+    const rdMap = {};
+    data.forEach(d=>{ const r=Math.round(d.remote_days); rdMap[r]=(rdMap[r]||0)+1; });
+    const keys = Object.keys(rdMap).sort((a,b)=>+a-+b);
+    CHARTS['chart-remote'] = new Chart(document.getElementById('chart-remote'), {
+      type:'bar',
+      data:{ labels:keys.map(k=>k+' j/sem'), datasets:[{ data:keys.map(k=>rdMap[k]), backgroundColor:'#10b981', borderRadius:6 }] },
+      options:{
+        responsive:true, maintainAspectRatio:true,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>` ${ctx.raw} répondants (${rnd(ctx.raw/n*100,1)}%)` } } },
+        scales:{ y:{ beginAtZero:true, ticks:{stepSize:1}, title:{display:true,text:'Effectif'} } }
+      }
+    });
+    const meanRD = rnd(avg(data.map(d=>d.remote_days)),1);
+    const pct2p  = rnd(data.filter(d=>d.remote_days>=2).length/n*100,1);
+    setInterp('interp-remote', `
+      <b>Jours de télétravail / semaine (n=${n})</b><br>
+      Moyenne : <b>${meanRD} j/sem</b> · ${pct2p}% télétravaillent ≥ 2 jours.
+      Le télétravail partiel génère des plages de travail en solo qui favorisent
+      l'adoption de pratiques asynchrones (mises à jour écrites, documentation, threads).
+    `);
+  }
+
+  // ── 4. Bar horizontale — Rôles ────────────────────────
+  destroyChart('chart-roles');
+  {
+    const rMap = {};
+    data.forEach(d=>{ rMap[d.role]=(rMap[d.role]||0)+1; });
+    const sorted = Object.entries(rMap).sort((a,b)=>b[1]-a[1]);
+    CHARTS['chart-roles'] = new Chart(document.getElementById('chart-roles'), {
+      type:'bar',
+      data:{ labels:sorted.map(e=>e[0]), datasets:[{ data:sorted.map(e=>e[1]),
+        backgroundColor:'rgba(79,70,229,0.75)', borderRadius:5 }] },
+      options:{
+        indexAxis:'y', responsive:true, maintainAspectRatio:true,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>` ${ctx.raw} répondants (${rnd(ctx.raw/n*100,1)}%)` } } },
+        scales:{ x:{ beginAtZero:true, ticks:{stepSize:1} } }
+      }
+    });
+    const top2 = sorted.slice(0,2);
+    setInterp('interp-roles', `
+      <b>Distribution des rôles (n=${n})</b><br>
+      Profils dominants : <b>${top2.map(e=>`${e[0]} (${rnd(e[1]/n*100,1)}%)`).join('</b>, <b>')}</b>.
+      La diversité de rôles garantit des perspectives variées sur les pratiques async ;
+      toute surreprésentation doit être considérée dans l'interprétation des hypothèses.
+    `);
+  }
+
+  // ── 5. Bar horizontale — Secteurs ─────────────────────
+  destroyChart('chart-sectors');
+  {
+    const sMap = {};
+    data.forEach(d=>{ sMap[d.sector]=(sMap[d.sector]||0)+1; });
+    const sorted = Object.entries(sMap).sort((a,b)=>b[1]-a[1]);
+    const palette = ['#4f46e5','#7c6fde','#a89be0','#c5bfe8','#ddd9f5','#eeeaff'];
+    CHARTS['chart-sectors'] = new Chart(document.getElementById('chart-sectors'), {
+      type:'bar',
+      data:{ labels:sorted.map(e=>e[0]), datasets:[{ data:sorted.map(e=>e[1]),
+        backgroundColor:sorted.map((_,i)=>palette[Math.min(i,palette.length-1)]), borderRadius:5 }] },
+      options:{
+        indexAxis:'y', responsive:true, maintainAspectRatio:true,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>` ${ctx.raw} répondants (${rnd(ctx.raw/n*100,1)}%)` } } },
+        scales:{ x:{ beginAtZero:true, ticks:{stepSize:1} } }
+      }
+    });
+    const topS = sorted[0];
+    setInterp('interp-sectors', `
+      <b>Secteurs d'activité (n=${n})</b><br>
+      Secteur dominant : <b>${topS[0]} (${rnd(topS[1]/n*100,1)}%)</b> ·
+      ${sorted.length} secteurs distincts représentés.<br>
+      La prédominance Tech et Banque-Assurance introduit un biais de sélection :
+      ces secteurs sont en avance sur l'adoption des pratiques numériques asynchrones.
+    `);
+  }
+
+  // ── 6. Histogramme — Ancienneté ────────────────────────
+  destroyChart('chart-tenure');
+  {
+    const vals = data.map(d=>d.tenure);
+    const {labels, counts} = histogram(vals, 7);
+    CHARTS['chart-tenure'] = new Chart(document.getElementById('chart-tenure'), {
+      type:'bar',
+      data:{ labels, datasets:[{ data:counts, backgroundColor:'rgba(79,70,229,0.7)',
+        borderColor:'#4f46e5', borderWidth:1, borderRadius:4 }] },
+      options:{
+        responsive:true, maintainAspectRatio:true,
+        plugins:{ legend:{display:false} },
+        scales:{
+          x:{ title:{display:true,text:'Ancienneté (mois)'} },
+          y:{ beginAtZero:true, ticks:{stepSize:1}, title:{display:true,text:'Effectif'} }
+        }
+      }
+    });
+    const meanT   = rnd(avg(vals),0);
+    const juniors = data.filter(d=>d.tenure<12).length;
+    const seniors = data.filter(d=>d.tenure>=36).length;
+    setInterp('interp-tenure', `
+      <b>Ancienneté dans l'équipe (n=${n})</b><br>
+      Moyenne : <b>${meanT} mois</b> · Min : ${Math.min(...vals)} mois · Max : ${Math.max(...vals)} mois.<br>
+      ${juniors} répondants (&lt;1 an) vs ${seniors} répondants (≥3 ans).
+      Les équipes matures ont généralement mieux intériorisé les pratiques async —
+      l'ancienneté peut être un modérateur clé dans l'analyse des scores AAI et CC.
+    `);
+  }
+
+  // ── 7. Histogramme — Taille d'équipe ──────────────────
+  destroyChart('chart-teamsize');
+  {
+    const vals = data.map(d=>d.team_size);
+    const {labels, counts} = histogram(vals, 7);
+    CHARTS['chart-teamsize'] = new Chart(document.getElementById('chart-teamsize'), {
+      type:'bar',
+      data:{ labels, datasets:[{ data:counts, backgroundColor:'rgba(16,185,129,0.7)',
+        borderColor:'#10b981', borderWidth:1, borderRadius:4 }] },
+      options:{
+        responsive:true, maintainAspectRatio:true,
+        plugins:{ legend:{display:false} },
+        scales:{
+          x:{ title:{display:true,text:"Taille d'équipe (personnes)"} },
+          y:{ beginAtZero:true, ticks:{stepSize:1}, title:{display:true,text:'Effectif'} }
+        }
+      }
+    });
+    const meanTS = rnd(avg(vals),1);
+    const micro  = data.filter(d=>d.team_size<=5).length;
+    const large  = data.filter(d=>d.team_size>=15).length;
+    setInterp('interp-teamsize', `
+      <b>Taille des équipes (n=${n})</b><br>
+      Moyenne : <b>${meanTS} personnes</b> · Min : ${Math.min(...vals)} · Max : ${Math.max(...vals)}.<br>
+      ${micro} micro-équipes (≤5 pers.) vs ${large} grandes équipes (≥15 pers.).<br>
+      La taille influence la coordination : les petites équipes maintiennent facilement la cohésion
+      synchrone, tandis que les grandes tirent davantage bénéfice de l'async structuré.
+    `);
+  }
+}
+
+</script>
+</body>
+</html>
