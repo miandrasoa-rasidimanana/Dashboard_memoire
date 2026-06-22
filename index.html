@@ -463,6 +463,28 @@
         <div class="meta-item"><div class="val" id="hdr-aai">—</div><div class="lbl">AAI moyen /5</div></div>
         <div class="meta-item"><div class="val" id="hdr-wb">—</div><div class="lbl">Bien-être /5</div></div>
         <div class="meta-item"><div class="val" id="hdr-perf">—</div><div class="lbl">Perf. /5</div></div>
+        <!-- Import CSV inline -->
+        <div class="meta-item" style="gap:4px;align-items:flex-start">
+          <label for="csv-file-input"
+                 style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;
+                        background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);
+                        border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;
+                        color:#fff;white-space:nowrap;transition:background .15s"
+                 onmouseover="this.style.background='rgba(255,255,255,0.25)'"
+                 onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            📂 Charger CSV
+          </label>
+          <input type="file" id="csv-file-input" accept=".csv"
+                 style="display:none"
+                 onchange="if(this.files[0]) loadCSVFile(this.files[0])">
+          <button id="csv-reset-btn"
+                  style="display:none;cursor:pointer;background:rgba(251,191,36,0.2);
+                         border:1px solid rgba(251,191,36,0.5);border-radius:6px;
+                         padding:4px 10px;font-size:11px;font-weight:600;color:#fef3c7;
+                         white-space:nowrap"
+                  onclick="resetToEmbedded()">↩ Réinitialiser</button>
+          <span id="csv-status" style="font-size:10px;color:rgba(255,255,255,0.7);margin-top:2px"></span>
+        </div>
       </div>
     </div>
     <a class="back-link" onclick="showSection('sec-synthese')" style="cursor:pointer">🎯 Synthèse</a>
@@ -565,23 +587,6 @@
       <button class="filter-reset" onclick="resetFilters()">✕ Réinitialiser</button>
     </div>
 
-    <!-- Import CSV -->
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <label for="csv-file-input" class="filter-reset"
-             style="cursor:pointer;background:#4f46e5;color:#fff;border-color:#4f46e5;
-                    display:inline-flex;align-items:center;gap:5px">
-        📂 Charger un CSV
-      </label>
-      <input type="file" id="csv-file-input" accept=".csv"
-             style="display:none"
-             onchange="if(this.files[0]) loadCSVFile(this.files[0])">
-      <button id="csv-reset-btn" class="filter-reset"
-              style="display:none;background:#fef3c7;border-color:#fcd34d;color:#92400e"
-              onclick="resetToEmbedded()">
-        ↩ Revenir aux données originales
-      </button>
-      <span id="csv-status" style="font-size:11px;color:#64748b"></span>
-    </div>
 
   </div>
 </div>
